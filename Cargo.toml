@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+members = ["embed-sim","embed-ui"]
+default-members = ["embed-sim"]
+
+[profile.release]
+opt-level = 's'
+codegen-units = 1
+lto = 'fat'
+# debug = 2

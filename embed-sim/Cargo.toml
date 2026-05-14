@@ -1,0 +1,10 @@
+[package]
+name = "embed-sim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+embed-ui = { path = "../embed-ui" }
+
+embedded-graphics = "0.8.2"
+embedded-graphics-simulator = { version = "0.8.0" }
