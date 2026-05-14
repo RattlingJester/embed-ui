@@ -15,8 +15,23 @@ pub struct Button<'a> {
 	pub held:   bool,
 }
 
+impl<'a> Button<'a> {
+	pub const fn new(text: &'a str, bounds: Rectangle) -> Self {
+		Self {
+			text,
+			bounds,
+			focus: false,
+			held: false,
+		}
+	}
+}
+
 impl Widget for Button<'_> {
-	fn draw<D: DrawTarget>(&mut self, style: &Style<D::Color>, target: D) {
+	fn draw<D: DrawTarget>(
+		&mut self,
+		style: &Style<D::Color>,
+		target: &mut D,
+	) -> Result<(), <D as DrawTarget>::Error> {
 		let bg = if self.held {
 			style.active_color
 		} else {

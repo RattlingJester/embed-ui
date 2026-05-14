@@ -10,7 +10,7 @@ use embed_ui::{
 	container::{View, WidgetId},
 	style::Style,
 	ui::Ui,
-	widgets::Widget,
+	widgets::{Widget, WidgetKind, button::Button},
 };
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ struct Elements {
 }
 
 fn main() {
-	let (mut page, ids) = const { main_page() };
+	let (mut page, ids) = main_page();
 
 	let mut display = SimulatorDisplay::<Rgb565>::new(Size::new(320, 480));
 
@@ -33,9 +33,6 @@ fn main() {
 
 	let mut pressed = false;
 	let mut pointer = None;
-
-	page.get_mut(ids.button).unwrap().held = true;
-	page.get_mut(ids.button).unwrap().text = "JOPA";
 
 	'run: loop {
 		window.update(&display);
@@ -64,22 +61,22 @@ fn main() {
 			}
 		}
 
-		ui.draw_view(&page, &mut display);
+		ui.draw_view(&mut page, &mut display);
 	}
 }
 
-const fn main_page() -> (View<'static, 20>, Elements) {
+fn main_page() -> (View<'static, 20>, Elements) {
 	let mut view = View::new();
 
-	let id = view.insert(Widget::button(
+	let id = view.insert(WidgetKind::Button(Button::new(
 		"HUI",
 		Rectangle::new(Point::new(0, 0), Size::new(100, 50)),
-	));
+	)));
 
-	let id2 = view.insert(Widget::button(
+	let id2 = view.insert(WidgetKind::Button(Button::new(
 		"ZALUPA",
 		Rectangle::new(Point::new(100, 50), Size::new(100, 50)),
-	));
+	)));
 
 	let elements = Elements {
 		button:  id,

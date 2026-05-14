@@ -1,6 +1,6 @@
 use embedded_graphics::prelude::DrawTarget;
 
-use crate::{container::View, style::Style};
+use crate::{container::View, style::Style, widgets::Widget};
 
 pub struct Ui<const S: usize, D: DrawTarget> {
 	pub style: Style<D::Color>,
@@ -12,8 +12,8 @@ impl<const S: usize, D: DrawTarget> Ui<S, D> {
 		Self { style, error: None }
 	}
 
-	pub fn draw_view(&mut self, view: &View<'_, S>, target: &mut D) {
-		for widget in view.iter() {
+	pub fn draw_view(&mut self, view: &mut View<'_, S>, target: &mut D) {
+		for widget in view.iter_mut() {
 			match widget.draw(&self.style, target) {
 				Ok(()) => (),
 				Err(e) => {
