@@ -9,10 +9,11 @@ use crate::{style::Style, widgets::Widget};
 
 #[derive(Debug)]
 pub struct Button<'a> {
-	pub text:   &'a str,
-	pub bounds: Rectangle,
-	pub focus:  bool,
-	pub held:   bool,
+	pub text:    &'a str,
+	pub bounds:  Rectangle,
+	pub focus:   bool,
+	pub held:    bool,
+	pub changed: bool,
 }
 
 impl<'a> Button<'a> {
@@ -22,6 +23,7 @@ impl<'a> Button<'a> {
 			bounds,
 			focus: false,
 			held: false,
+			changed: true,
 		}
 	}
 }
@@ -38,8 +40,14 @@ impl Widget for Button<'_> {
 			style.bg_color
 		};
 
+		let border = if self.focus {
+			style.focus_color
+		} else {
+			style.border_color
+		};
+
 		let prim_style = PrimitiveStyleBuilder::new()
-			.stroke_color(style.border_color)
+			.stroke_color(border)
 			.stroke_width(style.border_width)
 			.fill_color(bg)
 			.build();
@@ -59,6 +67,24 @@ impl Widget for Button<'_> {
 		)
 		.draw(target)?;
 
+		self.changed = false;
+
 		Ok(())
+	}
+
+	fn update(&mut self) {
+		// self.changed = true;
+		todo!()
+	}
+
+	fn set_focus(&mut self, focus: bool) {
+		if self.focus != focus {
+			self.changed = true;
+			self.focus = focus;
+		}
+	}
+
+	fn is_changed(&self) -> bool {
+		self.changed
 	}
 }

@@ -1,5 +1,5 @@
-#![no_std]
-#![allow(clippy::new_without_default)]
+// #![no_std]
+// #![allow(clippy::new_without_default)]
 
 pub mod container;
 pub mod input;

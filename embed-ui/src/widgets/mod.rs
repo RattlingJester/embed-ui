@@ -17,6 +17,12 @@ pub trait Widget {
 		style: &Style<D::Color>,
 		target: &mut D,
 	) -> Result<(), D::Error>;
+
+	fn update(&mut self);
+
+	fn set_focus(&mut self, focus: bool);
+
+	fn is_changed(&self) -> bool;
 }
 
 #[enum_dispatch(Widget)]

@@ -2,7 +2,8 @@
 
 use embedded_graphics::{pixelcolor::Rgb565, prelude::Size};
 use embedded_graphics_simulator::{
-	OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window, sdl2::MouseButton,
+	OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
+	sdl2::{Keycode, MouseButton},
 };
 
 use embed_ui::{
@@ -56,6 +57,22 @@ fn main() {
 					pointer = Some(point)
 				}
 				SimulatorEvent::MouseMove { point } => pointer = Some(point),
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::A,
+					keymod: _,
+					repeat: _,
+				} => {
+					page.focus_prev();
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::D,
+					keymod: _,
+					repeat: _,
+				} => {
+					page.focus_next();
+				}
 
 				_ => (),
 			}
