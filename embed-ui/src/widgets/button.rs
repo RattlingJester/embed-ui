@@ -1,26 +1,33 @@
 use embedded_graphics::{
 	mono_font::MonoTextStyle,
 	prelude::*,
-	primitives::{PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
+use heapless::String;
 
-use crate::{style::Style, widgets::Widget};
+use crate::{
+	Error,
+	container::WidgetId,
+	style::Style,
+	widgets::{MAX_TEXT_LEN, Widget},
+};
 
 #[derive(Debug)]
-pub struct Button<'a> {
-	pub text:    &'a str,
-	pub bounds:  Rectangle,
-	pub focus:   bool,
-	pub held:    bool,
-	pub changed: bool,
+pub struct Button {
+	id:      WidgetId,
+	text:    String<MAX_TEXT_LEN>,
+	size:    Size,
+	focus:   bool,
+	held:    bool,
+	changed: bool,
 }
 
-impl<'a> Button<'a> {
-	pub const fn new(text: &'a str, bounds: Rectangle) -> Self {
+impl Button {
+	pub const fn new(id: WidgetId, text: String<MAX_TEXT_LEN>, size: Size) -> Self {
 		Self {
+			id,
 			text,
-			bounds,
+			size,
 			focus: false,
 			held: false,
 			changed: true,
@@ -28,31 +35,14 @@ impl<'a> Button<'a> {
 	}
 }
 
-impl Widget for Button<'_> {
+impl Widget for Button {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
+		rect: impl Drawable<Color = D::Color>,
 		target: &mut D,
-	) -> Result<(), <D as DrawTarget>::Error> {
-		let bg = if self.held {
-			style.active_color
-		} else {
-			style.bg_color
-		};
-
-		let border = if self.focus {
-			style.focus_color
-		} else {
-			style.border_color
-		};
-
-		let prim_style = PrimitiveStyleBuilder::new()
-			.stroke_color(border)
-			.stroke_width(style.border_width)
-			.fill_color(bg)
-			.build();
-
-		self.bounds.into_styled(prim_style).draw(target)?;
+	) -> Result<(), D::Error> {
+		rect.draw(target)?;
 
 		let ts = TextStyleBuilder::new()
 			.alignment(Alignment::Center)
@@ -60,8 +50,8 @@ impl Widget for Button<'_> {
 			.build();
 
 		Text::with_text_style(
-			self.text,
-			self.bounds.center(),
+			&self.text,
+			Point::new((self.size.width / 2) as i32, (self.size.height / 2) as i32),
 			MonoTextStyle::new(style.font, style.text_color),
 			ts,
 		)
@@ -72,16 +62,27 @@ impl Widget for Button<'_> {
 		Ok(())
 	}
 
-	fn update(&mut self) {
-		// self.changed = true;
-		todo!()
-	}
-
 	fn set_focus(&mut self, focus: bool) {
 		if self.focus != focus {
 			self.changed = true;
 			self.focus = focus;
 		}
+	}
+
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
+
+	fn id(&self) -> WidgetId {
+		self.id
+	}
+
+	fn size(&self) -> Size {
+		self.size
 	}
 
 	fn is_changed(&self) -> bool {

@@ -3,20 +3,27 @@ use embedded_graphics::{
 	primitives::{PrimitiveStyleBuilder, Rectangle},
 };
 
-use crate::{style::Style, widgets::Widget};
+use heapless::String;
+
+use crate::{
+	style::Style,
+	widgets::{MAX_TEXT_LEN, Widget},
+};
 
 #[derive(Debug)]
-pub struct Checkbox<'a> {
-	pub text:    &'a str,
+pub struct Checkbox {
+	pub text:    String<MAX_TEXT_LEN>,
 	pub bounds:  Rectangle,
 	pub focus:   bool,
 	pub checked: bool,
 }
 
-impl<'a> Widget for Checkbox<'a> {
+impl Widget for Checkbox {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
+
+		rect: impl Drawable<Color = D::Color>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let border_style = PrimitiveStyleBuilder::new()
@@ -48,11 +55,19 @@ impl<'a> Widget for Checkbox<'a> {
 		Ok(())
 	}
 
-	fn update(&mut self) {
+	fn id(&self) -> crate::container::WidgetId {
+		todo!()
+	}
+
+	fn size(&self) -> Size {
 		todo!()
 	}
 
 	fn set_focus(&mut self, focus: bool) {
+		todo!()
+	}
+
+	fn set_text(&mut self, text: &str) -> Result<(), crate::Error> {
 		todo!()
 	}
 

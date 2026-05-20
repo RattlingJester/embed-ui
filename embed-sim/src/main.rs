@@ -1,4 +1,4 @@
-#![allow(unused)]
+use std::str::FromStr;
 
 use embedded_graphics::{pixelcolor::Rgb565, prelude::Size};
 use embedded_graphics_simulator::{
@@ -8,8 +8,7 @@ use embedded_graphics_simulator::{
 
 use embed_ui::{
 	Point, Rectangle,
-	container::{View, WidgetId},
-	style::Style,
+	container::{HorizontalAlign, Layout, Page, VerticalAlign, WidgetId},
 	ui::Ui,
 	widgets::{Widget, WidgetKind, button::Button},
 };
@@ -30,10 +29,11 @@ fn main() {
 
 	window.update(&display);
 
-	let mut ui = Ui::new(embed_ui::style::DEFAULT_STYLE);
+	let mut ui = Ui::new([page], embed_ui::style::DEFAULT_STYLE);
 
 	let mut pressed = false;
 	let mut pointer = None;
+	let mut i = 0;
 
 	'run: loop {
 		window.update(&display);
@@ -78,27 +78,46 @@ fn main() {
 			}
 		}
 
+		if let WidgetKind::Button(b) = page.get_mut(ids.button).unwrap() {
+			let text = format!("HUI {}", i);
+			b.set_text(&text).unwrap();
+		}
+
+		if let WidgetKind::Button(b) = page.get_mut(ids.button2).unwrap() {
+			let text = format!("HUI {}", i);
+			b.set_text(&text).unwrap();
+		}
+
 		ui.draw_view(&mut page, &mut display);
+
+		i += 1;
 	}
 }
 
-fn main_page() -> (View<'static, 20>, Elements) {
-	let mut view = View::new();
+fn main_page() -> (Page<20>, Elements) {
+	let mut page = Page::new(
+		Size::new(320, 480),
+		false,
+		Align {
+			horizontal: HorizontalAlign::Center,
+			vertical:   VerticalAlign::Center,
+		},
+	);
 
-	let id = view.insert(WidgetKind::Button(Button::new(
-		"HUI",
-		Rectangle::new(Point::new(0, 0), Size::new(100, 50)),
-	)));
+	// let id = page.insert(WidgetKind::Button(Button::new(
+	// 	heapless::String::from_str("HUI").unwrap(),
+	// 	Rectangle::new(Point::new(0, 0), Size::new(100, 50)),
+	// )));
 
-	let id2 = view.insert(WidgetKind::Button(Button::new(
-		"ZALUPA",
-		Rectangle::new(Point::new(100, 50), Size::new(100, 50)),
-	)));
+	// let id2 = page.insert(WidgetKind::Button(Button::new(
+	// 	heapless::String::from_str("ZALUPA").unwrap(),
+	// 	Rectangle::new(Point::new(100, 50), Size::new(100, 50)),
+	// )));
 
-	let elements = Elements {
-		button:  id,
-		button2: id2,
-	};
+	// let elements = Elements {
+	// 	button:  id,
+	// 	button2: id2,
+	// };
 
-	(view, elements)
+	(page, elements)
 }
