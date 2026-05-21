@@ -1,13 +1,13 @@
 use enum_dispatch::enum_dispatch;
 
 use embedded_graphics::{
-	Drawable,
 	prelude::{DrawTarget, Size},
+	primitives::Rectangle,
 };
 
 use crate::{
 	Error,
-	container::WidgetId,
+	input::Interaction,
 	style::Style,
 	widgets::{button::Button, checkbox::Checkbox, label::Label},
 };
@@ -24,14 +24,15 @@ pub trait Widget {
 		&mut self,
 		style: &Style<D::Color>,
 
-		rect: impl Drawable<Color = D::Color>,
+		rect: &Rectangle,
+		interaction: Option<Interaction>,
+
 		target: &mut D,
 	) -> Result<(), D::Error>;
 
 	fn set_focus(&mut self, focus: bool);
 	fn set_text(&mut self, text: &str) -> Result<(), Error>;
 
-	fn id(&self) -> WidgetId;
 	fn size(&self) -> Size;
 	fn is_changed(&self) -> bool;
 }

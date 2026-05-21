@@ -1,35 +1,34 @@
+use core::str::FromStr;
+
 use embedded_graphics::{
 	mono_font::MonoTextStyle,
 	prelude::*,
+	primitives::{PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 use heapless::String;
 
 use crate::{
 	Error,
-	container::WidgetId,
+	input::Interaction,
 	style::Style,
 	widgets::{MAX_TEXT_LEN, Widget},
 };
 
 #[derive(Debug)]
 pub struct Button {
-	id:      WidgetId,
 	text:    String<MAX_TEXT_LEN>,
 	size:    Size,
 	focus:   bool,
-	held:    bool,
 	changed: bool,
 }
 
 impl Button {
-	pub const fn new(id: WidgetId, text: String<MAX_TEXT_LEN>, size: Size) -> Self {
+	pub fn new(text: &str, size: Size) -> Self {
 		Self {
-			id,
-			text,
+			text: String::from_str(text).unwrap(),
 			size,
 			focus: false,
-			held: false,
 			changed: true,
 		}
 	}
@@ -39,19 +38,48 @@ impl Widget for Button {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
-		rect: impl Drawable<Color = D::Color>,
+		rect: &Rectangle,
+		interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		rect.draw(target)?;
+		let bg = match interaction {
+			// Some(Interaction::Hover(p)) => {
+			// 	if rect.contains(p) {
+			// 		style.active_color
+			// 	} else {
+			// 		style.bg_color
+			// 	}
+			// }
+			None => style.bg_color,
+			_ => todo!(),
+		};
+
+		let border_color = match self.focus {
+			true => style.focus_color,
+			false => style.border_color,
+		};
+
+		let prim_style = PrimitiveStyleBuilder::new()
+			.stroke_color(border_color)
+			.stroke_width(style.border_width)
+			.fill_color(bg)
+			.build();
+
+		rect.into_styled(prim_style).draw(target)?;
 
 		let ts = TextStyleBuilder::new()
 			.alignment(Alignment::Center)
 			.baseline(Baseline::Middle)
 			.build();
 
+		let text_location = Point::new(
+			rect.top_left.x + (rect.size.width / 2) as i32,
+			rect.top_left.y + (rect.size.height / 2) as i32,
+		);
+
 		Text::with_text_style(
 			&self.text,
-			Point::new((self.size.width / 2) as i32, (self.size.height / 2) as i32),
+			text_location,
 			MonoTextStyle::new(style.font, style.text_color),
 			ts,
 		)
@@ -75,10 +103,6 @@ impl Widget for Button {
 		self.changed = true;
 
 		Ok(())
-	}
-
-	fn id(&self) -> WidgetId {
-		self.id
 	}
 
 	fn size(&self) -> Size {

@@ -1,6 +1,6 @@
 use embedded_graphics::{
-	prelude::{DrawTarget, Point, Primitive, Size},
-	primitives::{PrimitiveStyleBuilder, Rectangle},
+	prelude::{DrawTarget, Point, Size},
+	primitives::Rectangle,
 };
 
 use crate::{
@@ -42,27 +42,7 @@ impl<const S: usize> Page<S> {
 	) -> Result<(), D::Error> {
 		for (widget, rect) in self.iter_mut() {
 			if widget.is_changed() {
-				let bg = match interaction {
-					Some(Interaction::Hover(p)) => {
-						if rect.contains(p) {
-							style.active_color
-						} else {
-							style.bg_color
-						}
-					}
-					None => style.bg_color,
-					_ => todo!(),
-				};
-
-				let prim_style = PrimitiveStyleBuilder::new()
-					.stroke_color(style.border_color)
-					.stroke_width(style.border_width)
-					.fill_color(bg)
-					.build();
-
-				let styled_rect = rect.into_styled(prim_style);
-
-				widget.draw(style, styled_rect, target)?;
+				widget.draw(style, rect, interaction, target)?;
 			}
 		}
 
@@ -114,7 +94,7 @@ impl<const S: usize> Page<S> {
 	}
 
 	pub fn insert(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
-		let rect = self.allocate_space(widget.size())?;
+		let rect = self.layout.next(widget.size())?;
 
 		let id = self.count;
 		self.widgets[id] = Some((widget, rect));
@@ -125,11 +105,6 @@ impl<const S: usize> Page<S> {
 		}
 
 		Ok(id)
-	}
-
-	fn allocate_space(&mut self, size: Size) -> Result<Rectangle, Error> {
-		let rect = self.layout.next(size)?;
-		Ok(rect)
 	}
 
 	fn set_focused(&mut self, new_idx: usize) {
@@ -145,17 +120,21 @@ impl<const S: usize> Page<S> {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum HorizontalAlign {
-	Left,
 	#[default]
-	Center,
+	Left,
+	Center {
+		columns: usize,
+	},
 	Right,
 }
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum VerticalAlign {
-	Top,
 	#[default]
-	Center,
+	Top,
+	Center {
+		rows: usize,
+	},
 	Bottom,
 }
 
@@ -201,8 +180,8 @@ impl Layout {
 		},
 		wrap:       false,
 		align:      Align {
-			horizontal: HorizontalAlign::Center,
-			vertical:   VerticalAlign::Center,
+			horizontal: HorizontalAlign::Left,
+			vertical:   VerticalAlign::Top,
 		},
 	};
 
@@ -231,41 +210,64 @@ impl Layout {
 			self.col = 0;
 		}
 
-		let rem_width = self.bounds.width - self.pos.x as u32;
-		let rem_height = self.bounds.height - self.pos.y as u32;
+		let (x_offset, advance_width) = match self.align.horizontal {
+			HorizontalAlign::Left => (0, size.width as i32),
+			HorizontalAlign::Right => (
+				(self.bounds.width as i32 - size.width as i32) - self.pos.x,
+				size.width as i32,
+			),
+			HorizontalAlign::Center { columns } => {
+				let cols = columns as i32;
 
-		let (x_offset, y_offset) = match (self.align.horizontal, self.align.vertical) {
-			(HorizontalAlign::Left, VerticalAlign::Top) => (0, 0),
-			(HorizontalAlign::Left, VerticalAlign::Center) => (0, (rem_height - size.height) / 2),
-			(HorizontalAlign::Left, VerticalAlign::Bottom) => (0, rem_height - size.height),
+				let base_slot_width = self.bounds.width as i32 / cols;
+				let remainder = self.bounds.width as i32 % cols;
 
-			(HorizontalAlign::Center, VerticalAlign::Top) => ((rem_width - size.width) / 2, 0),
-			(HorizontalAlign::Center, VerticalAlign::Center) => {
-				((rem_width - size.width) / 2, (rem_height - size.height) / 2)
-			}
-			(HorizontalAlign::Center, VerticalAlign::Bottom) => {
-				((rem_width - size.width) / 2, rem_height - size.height)
-			}
+				let current_slot_width = if (self.col as i32) < remainder {
+					base_slot_width + 1
+				} else {
+					base_slot_width
+				};
 
-			(HorizontalAlign::Right, VerticalAlign::Top) => (rem_width - size.width, 0),
-			(HorizontalAlign::Right, VerticalAlign::Center) => {
-				(rem_width - size.width, (rem_height - size.height) / 2)
+				let offset = (current_slot_width - size.width as i32) / 2;
+
+				(offset, current_slot_width)
 			}
-			(HorizontalAlign::Right, VerticalAlign::Bottom) => {
-				(rem_width - size.width, rem_height - size.height)
+		};
+
+		let (y_offset, advance_height) = match self.align.vertical {
+			VerticalAlign::Top => (0, size.height as i32),
+			VerticalAlign::Bottom => (
+				(self.bounds.height as i32 - size.height as i32) - self.pos.y,
+				size.height as i32,
+			),
+			VerticalAlign::Center { rows } => {
+				let rows_count = rows as i32;
+
+				let base_row_height = self.bounds.height as i32 / rows_count;
+				let remainder = self.bounds.height as i32 % rows_count;
+
+				let current_row_height = if (self.row as i32) < remainder {
+					base_row_height + 1
+				} else {
+					base_row_height
+				};
+
+				let offset = (current_row_height - size.height as i32) / 2;
+
+				(offset, current_row_height)
 			}
 		};
 
 		let widget_rect = Rectangle {
 			top_left: Point {
-				x: self.pos.x + x_offset as i32,
-				y: self.pos.y + y_offset as i32,
+				x: self.pos.x + x_offset,
+				y: self.pos.y + y_offset,
 			},
 			size,
 		};
 
-		self.row_height = self.row_height.max(size.height as usize);
-		self.pos.x += size.width as i32;
+		self.row_height = self.row_height.max(advance_height as usize);
+		self.pos.x += advance_width;
 		self.col += 1;
 
 		Ok(widget_rect)

@@ -5,6 +5,7 @@ use embedded_graphics::{
 use heapless::String;
 
 use crate::{
+	input::Interaction,
 	style::Style,
 	widgets::{MAX_TEXT_LEN, Widget},
 };
@@ -21,7 +22,9 @@ impl Widget for Label {
 		&mut self,
 		style: &Style<D::Color>,
 
-		rect: impl Drawable<Color = D::Color>,
+		rect: &Rectangle,
+		interaction: Option<Interaction>,
+
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let char_style = MonoTextStyle::new(style.font, style.text_color);
@@ -34,10 +37,6 @@ impl Widget for Label {
 	}
 
 	fn set_text(&mut self, text: &str) -> Result<(), crate::Error> {
-		todo!()
-	}
-
-	fn id(&self) -> crate::container::WidgetId {
 		todo!()
 	}
 
