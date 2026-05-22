@@ -12,4 +12,4 @@ defmt = { version = "1.0.1", optional = true }
 thiserror = { version = "2.0.18", default-features = false }
 
 [features]
-defmt = ["dep:defmt", "heapless/defmt"]
+defmt = ["dep:defmt", "heapless/defmt", "embedded-graphics/defmt"]
