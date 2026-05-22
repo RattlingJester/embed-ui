@@ -5,7 +5,10 @@ use crate::{
 	container::{Page, WidgetId},
 	input::{Event, Interaction},
 	style::Style,
-	widgets::{WidgetKind, button::Button},
+	widgets::{
+		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		textbox::Textbox,
+	},
 };
 
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget> {
@@ -83,6 +86,70 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
 	pub fn get_button_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Button> {
 		if let Some(WidgetKind::Button(b)) = self.get_page_mut(page_idx).get_mut(id) {
 			Some(b)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_label(&self, page_idx: u8, id: WidgetId) -> Option<&Label> {
+		if let WidgetKind::Label(l) = self.get_page(page_idx).get(id)? {
+			Some(l)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_label_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Label> {
+		if let WidgetKind::Label(l) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some(l)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_checkbox(&self, page_idx: u8, id: WidgetId) -> Option<&Checkbox> {
+		if let WidgetKind::Checkbox(c) = self.get_page(page_idx).get(id)? {
+			Some(c)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_checkbox_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Checkbox> {
+		if let WidgetKind::Checkbox(c) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some(c)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_separator(&self, page_idx: u8, id: WidgetId) -> Option<&Separator> {
+		if let WidgetKind::Separator(s) = self.get_page(page_idx).get(id)? {
+			Some(s)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_separator_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Separator> {
+		if let WidgetKind::Separator(s) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some(s)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_textbox(&self, page_idx: u8, id: WidgetId) -> Option<&Textbox> {
+		if let WidgetKind::Textbox(t) = self.get_page(page_idx).get(id)? {
+			Some(t)
+		} else {
+			None
+		}
+	}
+
+	pub fn get_textbox_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Textbox> {
+		if let WidgetKind::Textbox(t) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some(t)
 		} else {
 			None
 		}
