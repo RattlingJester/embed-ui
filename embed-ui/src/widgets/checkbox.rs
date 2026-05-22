@@ -10,6 +10,7 @@ pub struct Checkbox {
 	size:    Size,
 	focus:   bool,
 	checked: bool,
+	held:    bool,
 	changed: bool,
 }
 
@@ -19,8 +20,13 @@ impl Checkbox {
 			size,
 			focus: false,
 			checked: false,
+			held: false,
 			changed: true,
 		}
+	}
+
+	pub fn is_checked(&self) -> bool {
+		self.checked
 	}
 }
 
@@ -29,12 +35,12 @@ impl Widget for Checkbox {
 		&mut self,
 		style: &Style<D::Color>,
 		rect: &Rectangle,
-		interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		let bg = match interaction {
-			None => style.bg_color,
-			_ => todo!(),
+		let bg = if self.checked {
+			style.active_color
+		} else {
+			style.bg_color
 		};
 
 		let border_color = match self.focus {
@@ -71,6 +77,23 @@ impl Widget for Checkbox {
 		self.changed = false;
 
 		Ok(())
+	}
+
+	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>) {
+		let new_pressed = matches!(
+			interaction,
+			Some(Interaction::Click(p)) if rect.contains(p)
+		);
+
+		if new_pressed && !self.held {
+			self.checked = !self.checked;
+			self.held = true;
+			self.changed = true;
+		}
+
+		if !new_pressed {
+			self.held = false;
+		}
 	}
 
 	fn size(&self) -> Size {

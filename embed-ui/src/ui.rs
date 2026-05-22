@@ -1,13 +1,20 @@
 use embedded_graphics::prelude::DrawTarget;
+use heapless::spsc::Queue;
 
-use crate::{container::Page, input::Interaction, style::Style};
+use crate::{
+	container::{Page, WidgetId},
+	input::{Event, Interaction},
+	style::Style,
+	widgets::{WidgetKind, button::Button},
+};
 
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
+	events:          Queue<Event, WIDGET_COUNT>,
 	redraw_needed:   bool,
 	active_page_idx: u8,
+	interaction:     Option<Interaction>,
 	pub style:       Style<D::Color>,
-	pub interaction: Option<Interaction>,
 }
 
 impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
@@ -16,11 +23,16 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
 	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], style: Style<D::Color>) -> Self {
 		Self {
 			pages,
+			events: Queue::new(),
 			redraw_needed: false,
 			active_page_idx: 0,
 			style,
 			interaction: None,
 		}
+	}
+
+	pub fn drain_events(&mut self) -> Option<Event> {
+		self.events.dequeue()
 	}
 
 	pub const fn switch_to_page(&mut self, idx: u8) -> bool {
@@ -60,23 +72,57 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
 		&mut self.pages[self.active_page_idx as usize]
 	}
 
-	pub fn get_page(&self, idx: usize) -> &Page<WIDGET_COUNT> {
-		&self.pages[idx]
+	pub fn get_button(&self, page_idx: u8, id: WidgetId) -> Option<&Button> {
+		if let Some(WidgetKind::Button(b)) = self.get_page(page_idx).get(id) {
+			Some(b)
+		} else {
+			None
+		}
 	}
 
-	pub fn get_page_mut(&mut self, idx: usize) -> &mut Page<WIDGET_COUNT> {
-		&mut self.pages[idx]
+	pub fn get_button_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Button> {
+		if let Some(WidgetKind::Button(b)) = self.get_page_mut(page_idx).get_mut(id) {
+			Some(b)
+		} else {
+			None
+		}
 	}
 
-	pub fn draw(&mut self, target: &mut D) -> Result<(), D::Error> {
+	pub fn get_page(&self, idx: u8) -> &Page<WIDGET_COUNT> {
+		&self.pages[idx as usize]
+	}
+
+	pub fn get_page_mut(&mut self, idx: u8) -> &mut Page<WIDGET_COUNT> {
+		&mut self.pages[idx as usize]
+	}
+
+	pub fn draw(
+		&mut self,
+		interaction: Option<Interaction>,
+		target: &mut D,
+	) -> Result<(), D::Error> {
+		self.interaction = interaction;
+
 		let active_page = &mut self.pages[self.active_page_idx as usize];
 
 		if self.redraw_needed {
 			target.clear(self.style.screen_bg)?;
-			active_page.redraw(&self.style, self.interaction, target)?;
+			active_page.redraw(
+				&self.style,
+				self.interaction,
+				&mut self.events,
+				self.active_page_idx,
+				target,
+			)?;
 			self.redraw_needed = false;
 		} else {
-			active_page.draw(&self.style, self.interaction, target)?;
+			active_page.draw(
+				&self.style,
+				self.interaction,
+				&mut self.events,
+				self.active_page_idx,
+				target,
+			)?;
 		}
 
 		Ok(())

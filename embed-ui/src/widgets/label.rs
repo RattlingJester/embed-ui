@@ -42,7 +42,6 @@ impl Widget for Label {
 		&mut self,
 		style: &Style<D::Color>,
 		rect: &Rectangle,
-		_interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let char_style = MonoTextStyle::new(style.font, style.text_color);
@@ -50,6 +49,8 @@ impl Widget for Label {
 
 		Ok(())
 	}
+
+	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
 	fn set_focus(&mut self, _focus: bool) {}
 

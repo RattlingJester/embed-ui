@@ -39,7 +39,6 @@ impl Widget for Textbox {
 		&mut self,
 		style: &Style<D::Color>,
 		rect: &Rectangle,
-		_interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let border_style = PrimitiveStyleBuilder::new()
@@ -72,6 +71,8 @@ impl Widget for Textbox {
 
 		Ok(())
 	}
+
+	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
 	fn set_focus(&mut self, _focus: bool) {}
 

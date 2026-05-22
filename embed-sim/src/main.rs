@@ -7,10 +7,11 @@ use embedded_graphics_simulator::{
 use embed_ui::{
 	DrawTarget,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
+	input::{Event, Interaction},
 	ui::Ui,
 	widgets::{
-		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
-		textbox::Textbox,
+		MAX_TEXT_LEN, WidgetKind, button::Button, checkbox::Checkbox, label::Label,
+		separator::Separator, textbox::Textbox,
 	},
 };
 
@@ -45,8 +46,8 @@ fn main() {
 
 	let mut ui = Ui::new([page_main, page_settings], embed_ui::style::DEFAULT_STYLE);
 
-	// let mut pressed = false;
-	// let mut pointer = None;
+	let mut interaction = None;
+
 	let mut i = 0;
 
 	'run: loop {
@@ -55,22 +56,17 @@ fn main() {
 		for event in window.events() {
 			match event {
 				SimulatorEvent::Quit => break 'run,
+
 				SimulatorEvent::MouseButtonDown {
 					mouse_btn: MouseButton::Left,
-					point: _,
-				} => {
-					// pressed = true;
-					// pointer = Some(point)
-				}
+					point,
+				} => interaction = Some(Interaction::Click(point)),
 
 				SimulatorEvent::MouseButtonUp {
 					mouse_btn: MouseButton::Left,
-					point: _,
-				} => {
-					// pressed = false;
-					// pointer = Some(point)
-				}
-				// SimulatorEvent::MouseMove { point } => pointer = Some(point),
+					point,
+				} => interaction = Some(Interaction::Release(point)),
+
 				SimulatorEvent::KeyDown {
 					keycode: Keycode::A,
 					keymod: _,
@@ -105,22 +101,49 @@ fn main() {
 					ui.prev_page();
 				}
 
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::NUM_1,
+					keymod: _,
+					repeat: _,
+				} => {
+					ui.switch_to_page(0);
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::NUM_2,
+					keymod: _,
+					repeat: _,
+				} => {
+					ui.switch_to_page(1);
+				}
+
 				_ => (),
 			}
 		}
 
-		let page = ui.get_page_mut(0);
-		if let WidgetKind::Button(b) = page.get_mut(elements_main.ids[0] as WidgetId).unwrap() {
-			let text = format!("HUI {}", i);
+		if let Some(event) = ui.drain_events() {
+			match event {
+				Event::ButtonClicked {
+					page_idx,
+					widget_id,
+				} => {
+					println!("Button ID: {widget_id} clicked at page: {page_idx}");
+				}
+				Event::CheckboxToggled {
+					page_idx,
+					widget_id,
+				} => {
+					println!("Checkbox ID: {widget_id} checked at page: {page_idx}");
+				}
+			}
+		}
+
+		if let Some(b) = ui.get_button_mut(0, elements_main.ids[0]) {
+			let text: heapless::String<MAX_TEXT_LEN> = heapless::format!("ZALUPA {}", i).unwrap();
 			b.set_text(&text).unwrap();
 		}
 
-		if let WidgetKind::Button(b2) = page.get_mut(elements_main.ids[1] as WidgetId).unwrap() {
-			let text = format!("PIZDA {}", i);
-			b2.set_text(&text).unwrap();
-		}
-
-		ui.draw(&mut display);
+		ui.draw(interaction, &mut display);
 
 		i += 1;
 	}
@@ -136,11 +159,11 @@ fn main_page() -> Result<(Page<10>, WidgetIDs<3>), embed_ui::Error> {
 		},
 	);
 
-	let button1 = Button::new("HUI", Size::new(100, 50))?;
+	let button = Button::new("HUI", Size::new(100, 50))?;
 	let checkbox = Checkbox::new(Size::new(50, 50));
 	let label = Label::new("ZALUPA", Size::new(50, 50))?;
 
-	let id1 = page.insert(WidgetKind::Button(button1))?;
+	let id1 = page.insert(WidgetKind::Button(button))?;
 	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
 	let id3 = page.insert(WidgetKind::Label(label))?;
 
@@ -161,13 +184,13 @@ fn settings_page() -> Result<(Page<10>, WidgetIDs<5>), embed_ui::Error> {
 		},
 	);
 
-	let button1 = Button::new("SADAW", Size::new(100, 50))?;
+	let button = Button::new("SADAW", Size::new(100, 50))?;
 	let checkbox = Checkbox::new(Size::new(50, 50));
 	let label = Label::new("KJASD", Size::new(50, 50))?;
 	let separator = Separator::new(Size::new(320, 6));
 	let textbox = Textbox::new("ADAW", Size::new(320, 100))?;
 
-	let id1 = page.insert(WidgetKind::Button(button1))?;
+	let id1 = page.insert(WidgetKind::Button(button))?;
 	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
 	let id3 = page.insert(WidgetKind::Label(label))?;
 	let id4 = page.insert_next_row(WidgetKind::Separator(separator))?;

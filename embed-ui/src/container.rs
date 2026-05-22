@@ -2,10 +2,11 @@ use embedded_graphics::{
 	prelude::{DrawTarget, Point, Size},
 	primitives::Rectangle,
 };
+use heapless::spsc::Queue;
 
 use crate::{
 	Error,
-	input::Interaction,
+	input::{Event, Interaction},
 	style::Style,
 	widgets::{Widget, WidgetKind},
 };
@@ -32,29 +33,70 @@ impl<const S: usize> Page<S> {
 		}
 	}
 
-	pub fn draw<D: DrawTarget>(
+	pub fn draw<D: DrawTarget, const N: usize>(
 		&mut self,
 		style: &Style<D::Color>,
 		interaction: Option<Interaction>,
+		events: &mut Queue<Event, N>,
+		page_idx: u8,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		for (widget, rect) in self.iter_mut() {
+		for (idx, (widget, rect)) in self.iter_mut().enumerate() {
+			widget.interact(rect, interaction);
+
+			match widget {
+				WidgetKind::Button(b) if b.is_clicked() => unsafe {
+					events.enqueue_unchecked(Event::ButtonClicked {
+						page_idx,
+						widget_id: idx,
+					})
+				},
+				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
+					events.enqueue_unchecked(Event::CheckboxToggled {
+						page_idx,
+						widget_id: idx,
+					})
+				},
+				_ => (),
+			}
+
 			if widget.is_changed() {
-				widget.draw(style, rect, interaction, target)?;
+				widget.draw(style, rect, target)?;
 			}
 		}
 
 		Ok(())
 	}
 
-	pub fn redraw<D: DrawTarget>(
+	pub fn redraw<D: DrawTarget, const N: usize>(
 		&mut self,
 		style: &Style<D::Color>,
 		interaction: Option<Interaction>,
+		events: &mut Queue<Event, N>,
+		page_idx: u8,
+
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		for (widget, rect) in self.iter_mut() {
-			widget.draw(style, rect, interaction, target)?;
+		for (idx, (widget, rect)) in self.iter_mut().enumerate() {
+			widget.interact(rect, interaction);
+
+			match widget {
+				WidgetKind::Button(b) if b.is_clicked() => unsafe {
+					events.enqueue_unchecked(Event::ButtonClicked {
+						page_idx,
+						widget_id: idx,
+					})
+				},
+				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
+					events.enqueue_unchecked(Event::CheckboxToggled {
+						page_idx,
+						widget_id: idx,
+					})
+				},
+				_ => (),
+			}
+
+			widget.draw(style, rect, target)?;
 		}
 
 		Ok(())

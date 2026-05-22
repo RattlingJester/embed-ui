@@ -25,7 +25,6 @@ impl Widget for Separator {
 		&mut self,
 		style: &Style<D::Color>,
 		rect: &Rectangle,
-		_interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let style = PrimitiveStyleBuilder::new()
@@ -38,6 +37,8 @@ impl Widget for Separator {
 
 		Ok(())
 	}
+
+	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
 	fn size(&self) -> Size {
 		self.size

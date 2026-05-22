@@ -21,6 +21,7 @@ pub struct Button {
 	size:    Size,
 	focus:   bool,
 	changed: bool,
+	pressed: bool,
 }
 
 impl Button {
@@ -30,6 +31,7 @@ impl Button {
 			size,
 			focus: false,
 			changed: true,
+			pressed: false,
 		})
 	}
 
@@ -40,6 +42,10 @@ impl Button {
 
 		Ok(())
 	}
+
+	pub fn is_clicked(&self) -> bool {
+		self.pressed
+	}
 }
 
 impl Widget for Button {
@@ -47,19 +53,12 @@ impl Widget for Button {
 		&mut self,
 		style: &Style<D::Color>,
 		rect: &Rectangle,
-		interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		let bg = match interaction {
-			// Some(Interaction::Hover(p)) => {
-			// 	if rect.contains(p) {
-			// 		style.active_color
-			// 	} else {
-			// 		style.bg_color
-			// 	}
-			// }
-			None => style.bg_color,
-			_ => todo!(),
+		let bg = if self.pressed {
+			style.active_color
+		} else {
+			style.bg_color
 		};
 
 		let border_color = match self.focus {
@@ -96,6 +95,27 @@ impl Widget for Button {
 		self.changed = false;
 
 		Ok(())
+	}
+
+	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>) {
+		let new_pressed = matches!(
+			interaction,
+			Some(Interaction::Click(p)) if rect.contains(p)
+		);
+		let released = matches!(
+			interaction,
+			Some(Interaction::Release(p)) if rect.contains(p)
+		);
+
+		if released && self.pressed {
+			self.pressed = true;
+			self.changed = true;
+		}
+
+		if new_pressed != self.pressed {
+			self.pressed = new_pressed;
+			self.changed = true;
+		}
 	}
 
 	fn set_focus(&mut self, focus: bool) {

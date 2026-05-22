@@ -16,6 +16,9 @@ pub struct Style<C: PixelColor> {
 	/// Widget background when pressed / checked / active.
 	pub active_color: C,
 
+	/// Widget background when hovered.
+	pub hover_color: C,
+
 	/// Widget border / outline colour.
 	pub border_color: C,
 
@@ -36,7 +39,8 @@ pub struct Style<C: PixelColor> {
 pub const DEFAULT_STYLE: Style<Rgb565> = Style {
 	screen_bg:    Rgb565::new(1, 3, 2),    // #080E14
 	bg_color:     Rgb565::new(2, 7, 5),    // #101C28
-	active_color: Rgb565::new(0, 20, 12),  // #005060
+	active_color: Rgb565::new(0, 30, 22),  // #0079b5
+	hover_color:  Rgb565::new(0, 20, 12),  // #005163
 	border_color: Rgb565::new(0, 42, 24),  // #00A8C0
 	text_color:   Rgb565::new(27, 60, 30), // #D8F0F4
 	focus_color:  Rgb565::new(255, 0, 0),  // #FF0000

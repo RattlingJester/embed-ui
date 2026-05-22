@@ -26,17 +26,14 @@ pub trait Widget {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
-
 		rect: &Rectangle,
-		interaction: Option<Interaction>,
-
 		target: &mut D,
 	) -> Result<(), D::Error>;
 
+	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>);
 	fn set_focus(&mut self, focus: bool);
 
 	fn size(&self) -> Size;
-
 	fn is_focusable(&self) -> bool;
 	fn is_changed(&self) -> bool;
 }
