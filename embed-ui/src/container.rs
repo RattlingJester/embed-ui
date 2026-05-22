@@ -14,11 +14,10 @@ pub type WidgetId = usize;
 
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
-	widgets:    [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
-	// widget_rects: [Option<Rectangle>; WIDGET_COUNT],
-	count:      usize,
-	focus_idx:  WidgetId,
-	pub layout: Layout,
+	widgets:   [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+	count:     usize,
+	focus_idx: WidgetId,
+	layout:    Layout,
 }
 
 impl<const S: usize> Page<S> {
@@ -27,7 +26,6 @@ impl<const S: usize> Page<S> {
 
 		Self {
 			widgets: [const { None }; S],
-			// widget_rects: [const { None }; S],
 			count: 0,
 			focus_idx: 0,
 			layout,
@@ -44,6 +42,19 @@ impl<const S: usize> Page<S> {
 			if widget.is_changed() {
 				widget.draw(style, rect, interaction, target)?;
 			}
+		}
+
+		Ok(())
+	}
+
+	pub fn redraw<D: DrawTarget>(
+		&mut self,
+		style: &Style<D::Color>,
+		interaction: Option<Interaction>,
+		target: &mut D,
+	) -> Result<(), D::Error> {
+		for (widget, rect) in self.iter_mut() {
+			widget.draw(style, rect, interaction, target)?;
 		}
 
 		Ok(())
@@ -107,10 +118,27 @@ impl<const S: usize> Page<S> {
 		Ok(id)
 	}
 
+	pub fn insert_next_row(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
+		let rect = self.layout.next_row(widget.size())?;
+
+		let id = self.count;
+		self.widgets[id] = Some((widget, rect));
+		self.count += 1;
+
+		Ok(id)
+	}
+
 	fn set_focused(&mut self, new_idx: usize) {
+		if let Some(w) = self.get(new_idx)
+			&& !w.is_focusable()
+		{
+			return;
+		}
+
 		if let Some(w) = self.get_mut(self.focus_idx) {
 			w.set_focus(false);
 		}
+
 		self.focus_idx = new_idx;
 		if let Some(w) = self.get_mut(self.focus_idx) {
 			w.set_focus(true);
@@ -271,6 +299,28 @@ impl Layout {
 		self.col += 1;
 
 		Ok(widget_rect)
+	}
+
+	fn next_row(&mut self, size: Size) -> Result<Rectangle, Error> {
+		if !self.check_bounds(size) {
+			return Err(Error::NoSpaceLeft);
+		}
+
+		let next_y = self.pos.y + self.row_height as i32;
+
+		self.pos.x = 0;
+		self.pos.y = next_y;
+		self.row_height = 0;
+		self.row += 1;
+		self.col = 0;
+
+		Ok(Rectangle {
+			top_left: Point {
+				x: self.pos.x,
+				y: self.pos.y,
+			},
+			size,
+		})
 	}
 
 	const fn space_available(&self) -> Size {

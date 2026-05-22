@@ -15,7 +15,7 @@ use crate::{
 	widgets::{MAX_TEXT_LEN, Widget},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Button {
 	text:    String<MAX_TEXT_LEN>,
 	size:    Size,
@@ -24,13 +24,21 @@ pub struct Button {
 }
 
 impl Button {
-	pub fn new(text: &str, size: Size) -> Self {
-		Self {
-			text: String::from_str(text).unwrap(),
+	pub fn new(text: &str, size: Size) -> Result<Self, Error> {
+		Ok(Self {
+			text: String::from_str(text)?,
 			size,
 			focus: false,
 			changed: true,
-		}
+		})
+	}
+
+	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
 	}
 }
 
@@ -97,16 +105,12 @@ impl Widget for Button {
 		}
 	}
 
-	fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
 	fn size(&self) -> Size {
 		self.size
+	}
+
+	fn is_focusable(&self) -> bool {
+		true
 	}
 
 	fn is_changed(&self) -> bool {

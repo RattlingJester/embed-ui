@@ -5,17 +5,32 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
+	DrawTarget,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	ui::Ui,
-	widgets::{Widget, WidgetKind, button::Button, checkbox::Checkbox},
+	widgets::{WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator},
 };
+
+// macro_rules! to_page {
+// 	($page:expr) => {
+// 		unsafe { core::mem::transmute::<u8, Pages>($page) }
+// 	};
+// }
+
+// #[derive(Debug, Clone, Copy)]
+// #[repr(u8)]
+// pub enum Pages {
+// 	Main     = 0,
+// 	Settings = 1,
+// }
 
 struct WidgetIDs<const WIDGET_COUNT: usize> {
 	pub ids: [WidgetId; WIDGET_COUNT],
 }
 
 fn main() {
-	let (page, elements) = main_page();
+	let (page_main, elements_main) = main_page().unwrap();
+	let (page_settings, _elements_sett) = settings_page().unwrap();
 
 	let mut display = SimulatorDisplay::<Rgb565>::new(Size::new(320, 480));
 
@@ -23,8 +38,9 @@ fn main() {
 	let mut window = Window::new("Test", &output_settings);
 
 	window.update(&display);
+	display.clear(embed_ui::style::DEFAULT_STYLE.screen_bg);
 
-	let mut ui = Ui::new([page], embed_ui::style::DEFAULT_STYLE);
+	let mut ui = Ui::new([page_main, page_settings], embed_ui::style::DEFAULT_STYLE);
 
 	// let mut pressed = false;
 	// let mut pointer = None;
@@ -57,7 +73,7 @@ fn main() {
 					keymod: _,
 					repeat: _,
 				} => {
-					let page = ui.get_page_mut(0);
+					let page = ui.current_page_mut();
 					page.focus_prev();
 				}
 
@@ -66,8 +82,24 @@ fn main() {
 					keymod: _,
 					repeat: _,
 				} => {
-					let page = ui.get_page_mut(0);
+					let page = ui.current_page_mut();
 					page.focus_next();
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::E,
+					keymod: _,
+					repeat: _,
+				} => {
+					ui.next_page();
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::Q,
+					keymod: _,
+					repeat: _,
+				} => {
+					ui.prev_page();
 				}
 
 				_ => (),
@@ -75,12 +107,12 @@ fn main() {
 		}
 
 		let page = ui.get_page_mut(0);
-		if let WidgetKind::Button(b) = page.get_mut(elements.ids[0]).unwrap() {
+		if let WidgetKind::Button(b) = page.get_mut(elements_main.ids[0] as WidgetId).unwrap() {
 			let text = format!("HUI {}", i);
 			b.set_text(&text).unwrap();
 		}
 
-		if let WidgetKind::Button(b2) = page.get_mut(elements.ids[1]).unwrap() {
+		if let WidgetKind::Button(b2) = page.get_mut(elements_main.ids[1] as WidgetId).unwrap() {
 			let text = format!("PIZDA {}", i);
 			b2.set_text(&text).unwrap();
 		}
@@ -91,7 +123,7 @@ fn main() {
 	}
 }
 
-fn main_page() -> (Page<20>, WidgetIDs<4>) {
+fn main_page() -> Result<(Page<10>, WidgetIDs<3>), embed_ui::Error> {
 	let mut page = Page::new(
 		Size::new(320, 480),
 		true,
@@ -101,19 +133,44 @@ fn main_page() -> (Page<20>, WidgetIDs<4>) {
 		},
 	);
 
-	let button1 = Button::new("HUI", Size::new(100, 50));
-	let button2 = Button::new("PIZDA", Size::new(100, 50));
-	let button3 = Button::new("ZALUPA", Size::new(100, 50));
-	let checkbox = Checkbox::new("PIDOR", Size::new(50, 50));
+	let button1 = Button::new("HUI", Size::new(100, 50))?;
+	let checkbox = Checkbox::new(Size::new(50, 50));
+	let label = Label::new("ZALUPA", Size::new(50, 50))?;
 
-	let id1 = page.insert(WidgetKind::Button(button1)).unwrap();
-	let id2 = page.insert(WidgetKind::Button(button2)).unwrap();
-	let id3 = page.insert(WidgetKind::Button(button3)).unwrap();
-	let id4 = page.insert(WidgetKind::Checkbox(checkbox)).unwrap();
+	let id1 = page.insert(WidgetKind::Button(button1))?;
+	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
+	let id3 = page.insert(WidgetKind::Label(label))?;
+
+	let elements = WidgetIDs {
+		ids: [id1, id2, id3],
+	};
+
+	Ok((page, elements))
+}
+
+fn settings_page() -> Result<(Page<10>, WidgetIDs<4>), embed_ui::Error> {
+	let mut page = Page::new(
+		Size::new(320, 480),
+		true,
+		Align {
+			horizontal: HorizontalAlign::Left,
+			vertical:   VerticalAlign::Top,
+		},
+	);
+
+	let button1 = Button::new("SADAW", Size::new(100, 50))?;
+	let checkbox = Checkbox::new(Size::new(50, 50));
+	let label = Label::new("KJASD", Size::new(50, 50))?;
+	let separator = Separator::new(Size::new(320, 6));
+
+	let id1 = page.insert(WidgetKind::Button(button1))?;
+	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
+	let id3 = page.insert(WidgetKind::Label(label))?;
+	let id4 = page.insert_next_row(WidgetKind::Separator(separator))?;
 
 	let elements = WidgetIDs {
 		ids: [id1, id2, id3, id4],
 	};
 
-	(page, elements)
+	Ok((page, elements))
 }

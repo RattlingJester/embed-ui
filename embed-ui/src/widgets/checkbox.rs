@@ -1,23 +1,12 @@
-use core::str::FromStr;
-
 use embedded_graphics::{
-	mono_font::MonoTextStyle,
 	prelude::*,
 	primitives::{PrimitiveStyleBuilder, Rectangle},
-	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 
-use heapless::String;
+use crate::{input::Interaction, style::Style, widgets::Widget};
 
-use crate::{
-	input::Interaction,
-	style::Style,
-	widgets::{MAX_TEXT_LEN, Widget},
-};
-
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Checkbox {
-	text:    String<MAX_TEXT_LEN>,
 	size:    Size,
 	focus:   bool,
 	checked: bool,
@@ -25,9 +14,8 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
-	pub fn new(text: &str, size: Size) -> Self {
+	pub fn new(size: Size) -> Self {
 		Self {
-			text: String::from_str(text).unwrap(),
 			size,
 			focus: false,
 			checked: false,
@@ -78,24 +66,6 @@ impl Widget for Checkbox {
 			inner.into_styled(fill_style).draw(target)?;
 		}
 
-		let ts = TextStyleBuilder::new()
-			.alignment(Alignment::Left)
-			.baseline(Baseline::Middle)
-			.build();
-
-		let text_location = Point::new(
-			rect.top_left.x + (rect.size.width + style.border_width) as i32,
-			rect.top_left.y + (rect.size.height / 2) as i32,
-		);
-
-		Text::with_text_style(
-			&self.text,
-			text_location,
-			MonoTextStyle::new(style.font, style.text_color),
-			ts,
-		)
-		.draw(target)?;
-
 		rect.into_styled(border_style).draw(target)?;
 
 		self.changed = false;
@@ -114,12 +84,8 @@ impl Widget for Checkbox {
 		}
 	}
 
-	fn set_text(&mut self, text: &str) -> Result<(), crate::Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
+	fn is_focusable(&self) -> bool {
+		true
 	}
 
 	fn is_changed(&self) -> bool {

@@ -6,15 +6,18 @@ use embedded_graphics::{
 };
 
 use crate::{
-	Error,
 	input::Interaction,
 	style::Style,
-	widgets::{button::Button, checkbox::Checkbox, label::Label},
+	widgets::{
+		button::Button, checkbox::Checkbox, label::Label, separator::Separator, textbox::Textbox,
+	},
 };
 
 pub mod button;
 pub mod checkbox;
 pub mod label;
+pub mod separator;
+pub mod textbox;
 
 pub const MAX_TEXT_LEN: usize = 64;
 
@@ -31,16 +34,19 @@ pub trait Widget {
 	) -> Result<(), D::Error>;
 
 	fn set_focus(&mut self, focus: bool);
-	fn set_text(&mut self, text: &str) -> Result<(), Error>;
 
 	fn size(&self) -> Size;
+
+	fn is_focusable(&self) -> bool;
 	fn is_changed(&self) -> bool;
 }
 
 #[enum_dispatch(Widget)]
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum WidgetKind {
 	Label(Label),
 	Button(Button),
 	Checkbox(Checkbox),
+	Separator(Separator),
+	Textbox(Textbox),
 }
