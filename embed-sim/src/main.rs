@@ -8,7 +8,10 @@ use embed_ui::{
 	DrawTarget,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	ui::Ui,
-	widgets::{WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator},
+	widgets::{
+		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		textbox::Textbox,
+	},
 };
 
 // macro_rules! to_page {
@@ -148,7 +151,7 @@ fn main_page() -> Result<(Page<10>, WidgetIDs<3>), embed_ui::Error> {
 	Ok((page, elements))
 }
 
-fn settings_page() -> Result<(Page<10>, WidgetIDs<4>), embed_ui::Error> {
+fn settings_page() -> Result<(Page<10>, WidgetIDs<5>), embed_ui::Error> {
 	let mut page = Page::new(
 		Size::new(320, 480),
 		true,
@@ -162,14 +165,16 @@ fn settings_page() -> Result<(Page<10>, WidgetIDs<4>), embed_ui::Error> {
 	let checkbox = Checkbox::new(Size::new(50, 50));
 	let label = Label::new("KJASD", Size::new(50, 50))?;
 	let separator = Separator::new(Size::new(320, 6));
+	let textbox = Textbox::new("ADAW", Size::new(320, 100))?;
 
 	let id1 = page.insert(WidgetKind::Button(button1))?;
 	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
 	let id3 = page.insert(WidgetKind::Label(label))?;
 	let id4 = page.insert_next_row(WidgetKind::Separator(separator))?;
+	let id5 = page.insert_next_row(WidgetKind::Textbox(textbox))?;
 
 	let elements = WidgetIDs {
-		ids: [id1, id2, id3, id4],
+		ids: [id1, id2, id3, id4, id5],
 	};
 
 	Ok((page, elements))
