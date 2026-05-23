@@ -69,6 +69,8 @@ impl Widget for Textbox {
 		)
 		.draw(target)?;
 
+		self.changed = false;
+
 		Ok(())
 	}
 
