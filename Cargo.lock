@@ -85,6 +85,15 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "defmt"
+version = "0.3.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0963443817029b2024136fc4dd07a5107eb8f977eaf18fcd1fdeb11306b64ad"
+dependencies = [
+ "defmt 1.1.0",
+]
+
+[[package]]
+name = "defmt"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6e524506490a1953d237cb87b1cfc1e46f88c18f10a22dfe0f507dc6bfc7f7f"
@@ -129,7 +138,7 @@ dependencies = [
 name = "embed-ui"
 version = "0.1.0"
 dependencies = [
- "defmt",
+ "defmt 1.1.0",
  "embedded-graphics",
  "enum_dispatch",
  "heapless",
@@ -144,6 +153,7 @@ checksum = "4e8da660bb0c829b34a56a965490597f82a55e767b91f9543be80ce8ccb416fe"
 dependencies = [
  "az",
  "byteorder",
+ "defmt 0.3.100",
  "embedded-graphics-core",
  "fixed",
  "float-cmp",
@@ -159,6 +169,7 @@ checksum = "95743bef3ff70fcba3930246c4e6872882bbea0dcc6da2ca860112e0cd4bd09f"
 dependencies = [
  "az",
  "byteorder",
+ "defmt 0.3.100",
 ]
 
 [[package]]
@@ -251,7 +262,7 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25ba4bd83f9415b58b4ed8dc5714c76e626a105be4646c02630ad730ad3b5aa4"
 dependencies = [
- "defmt",
+ "defmt 1.1.0",
  "hash32",
  "stable_deref_trait",
 ]

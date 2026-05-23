@@ -1,6 +1,6 @@
 use embedded_graphics::{
 	mono_font::{MonoFont, ascii::FONT_6X12},
-	pixelcolor::Rgb565,
+	pixelcolor::{Rgb565, Rgb666},
 	prelude::PixelColor,
 };
 
@@ -36,7 +36,7 @@ pub struct Style<C: PixelColor> {
 	pub font: &'static MonoFont<'static>,
 }
 
-pub const DEFAULT_STYLE: Style<Rgb565> = Style {
+pub const DEFAULT_STYLE_565: Style<Rgb565> = Style {
 	screen_bg:    Rgb565::new(1, 3, 2),    // #080E14
 	bg_color:     Rgb565::new(2, 7, 5),    // #101C28
 	active_color: Rgb565::new(0, 30, 22),  // #0079b5
@@ -44,6 +44,18 @@ pub const DEFAULT_STYLE: Style<Rgb565> = Style {
 	border_color: Rgb565::new(0, 42, 24),  // #00A8C0
 	text_color:   Rgb565::new(27, 60, 30), // #D8F0F4
 	focus_color:  Rgb565::new(255, 0, 0),  // #FF0000
+	border_width: 1,
+	font:         &FONT_6X12,
+};
+
+pub const DEFAULT_STYLE_666: Style<Rgb666> = Style {
+	screen_bg:    Rgb666::new(1, 3, 2),    // #080E14
+	bg_color:     Rgb666::new(2, 7, 5),    // #101C28
+	active_color: Rgb666::new(0, 30, 22),  // #0079b5
+	hover_color:  Rgb666::new(0, 20, 12),  // #005163
+	border_color: Rgb666::new(0, 42, 24),  // #00A8C0
+	text_color:   Rgb666::new(27, 60, 30), // #D8F0F4
+	focus_color:  Rgb666::new(255, 0, 0),  // #FF0000
 	border_width: 1,
 	font:         &FONT_6X12,
 };
