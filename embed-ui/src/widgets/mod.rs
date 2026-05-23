@@ -39,6 +39,7 @@ pub trait Widget {
 }
 
 #[enum_dispatch(Widget)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum WidgetKind {
 	Label(Label),
