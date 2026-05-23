@@ -13,6 +13,7 @@ use crate::{
 	widgets::{MAX_TEXT_LEN, Widget},
 };
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Label {
 	text:    String<MAX_TEXT_LEN>,

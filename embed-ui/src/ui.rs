@@ -11,6 +11,8 @@ use crate::{
 	},
 };
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,

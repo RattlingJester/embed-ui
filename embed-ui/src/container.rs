@@ -13,6 +13,7 @@ use crate::{
 
 pub type WidgetId = usize;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
 	widgets:   [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
@@ -188,6 +189,7 @@ impl<const S: usize> Page<S> {
 	}
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Default, Clone, Copy)]
 pub enum HorizontalAlign {
 	#[default]
@@ -198,6 +200,7 @@ pub enum HorizontalAlign {
 	Right,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Default, Clone, Copy)]
 pub enum VerticalAlign {
 	#[default]
@@ -208,6 +211,7 @@ pub enum VerticalAlign {
 	Bottom,
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Align {
 	pub horizontal: HorizontalAlign,
@@ -220,6 +224,8 @@ pub struct Align {
 ///
 /// - Widgets are placed in rows, from left to right, from top to bottom
 /// - Placement cannot happen outside of the bounds of the placer
+///
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Default)]
 pub struct Layout {
 	/// Position of the top left corner

@@ -5,6 +5,7 @@ use embedded_graphics::{
 
 use crate::{input::Interaction, style::Style, widgets::Widget};
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Checkbox {
 	size:    Size,
