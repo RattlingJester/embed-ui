@@ -6,7 +6,7 @@ pub mod style;
 pub mod ui;
 pub mod widgets;
 
-pub use embedded_graphics::{prelude::*, primitives::Rectangle};
+pub use embedded_graphics::{pixelcolor::*, prelude::*, primitives::Rectangle};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, thiserror::Error)]
