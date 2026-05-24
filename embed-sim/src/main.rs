@@ -42,9 +42,12 @@ fn main() {
 	let mut window = Window::new("Test", &output_settings);
 
 	window.update(&display);
-	display.clear(embed_ui::style::DEFAULT_STYLE.screen_bg);
+	display.clear(embed_ui::style::DEFAULT_STYLE_565.screen_bg);
 
-	let mut ui = Ui::new([page_main, page_settings], embed_ui::style::DEFAULT_STYLE);
+	let mut ui = Ui::new(
+		[page_main, page_settings],
+		embed_ui::style::DEFAULT_STYLE_565,
+	);
 
 	let mut interaction = None;
 

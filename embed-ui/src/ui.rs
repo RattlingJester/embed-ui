@@ -1,4 +1,4 @@
-use embedded_graphics::prelude::DrawTarget;
+use embedded_graphics::prelude::{DrawTarget, PixelColor};
 use heapless::spsc::Queue;
 
 use crate::{
@@ -13,19 +13,19 @@ use crate::{
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
-pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget> {
+pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
 	redraw_needed:   bool,
 	active_page_idx: u8,
 	interaction:     Option<Interaction>,
-	pub style:       Style<D::Color>,
+	pub style:       Style<C>,
 }
 
-impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
-	Ui<WIDGET_COUNT, PAGE_COUNT, D>
+impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
+	Ui<WIDGET_COUNT, PAGE_COUNT, C>
 {
-	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], style: Style<D::Color>) -> Self {
+	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], style: Style<C>) -> Self {
 		Self {
 			pages,
 			events: Queue::new(),
@@ -165,7 +165,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, D: DrawTarget>
 		&mut self.pages[idx as usize]
 	}
 
-	pub fn draw(
+	pub fn draw<D: DrawTarget<Color = C>>(
 		&mut self,
 		interaction: Option<Interaction>,
 		target: &mut D,
