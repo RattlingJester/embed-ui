@@ -16,7 +16,6 @@ use crate::{
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
-	redraw_needed:   bool,
 	active_page_idx: u8,
 	interaction:     Option<Interaction>,
 	pub style:       Style<C>,
@@ -29,7 +28,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		Self {
 			pages,
 			events: Queue::new(),
-			redraw_needed: false,
 			active_page_idx: 0,
 			style,
 			interaction: None,
@@ -43,7 +41,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	pub const fn switch_to_page(&mut self, idx: u8) -> bool {
 		if idx < PAGE_COUNT as u8 {
 			self.active_page_idx = idx;
-			self.redraw_needed = true;
 			true
 		} else {
 			false
@@ -53,7 +50,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	/// Switches to the next page, wrapping back to the first page if at the end.
 	pub fn next_page(&mut self) {
 		self.active_page_idx = (self.active_page_idx + 1) % PAGE_COUNT as u8;
-		self.redraw_needed = true;
 	}
 
 	/// Switches to the previous page, wrapping to the last page if at the beginning.
@@ -63,8 +59,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		} else {
 			self.active_page_idx - 1
 		};
-
-		self.redraw_needed = true;
 	}
 
 	/// Retrieves the currently active page immutably
@@ -182,25 +176,13 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 
 		let active_page = &mut self.pages[self.active_page_idx as usize];
 
-		if self.redraw_needed {
-			target.clear(self.style.screen_bg)?;
-			active_page.redraw(
-				&self.style,
-				self.interaction,
-				&mut self.events,
-				self.active_page_idx,
-				target,
-			)?;
-			self.redraw_needed = false;
-		} else {
-			active_page.draw(
-				&self.style,
-				self.interaction,
-				&mut self.events,
-				self.active_page_idx,
-				target,
-			)?;
-		}
+		active_page.draw(
+			&self.style,
+			self.interaction,
+			&mut self.events,
+			self.active_page_idx,
+			target,
+		)?;
 
 		Ok(())
 	}

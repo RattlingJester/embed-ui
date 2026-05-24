@@ -69,40 +69,6 @@ impl<const S: usize> Page<S> {
 		Ok(())
 	}
 
-	pub fn redraw<D: DrawTarget, const N: usize>(
-		&mut self,
-		style: &Style<D::Color>,
-		interaction: Option<Interaction>,
-		events: &mut Queue<Event, N>,
-		page_idx: u8,
-
-		target: &mut D,
-	) -> Result<(), D::Error> {
-		for (idx, (widget, rect)) in self.iter_mut().enumerate() {
-			widget.interact(rect, interaction);
-
-			match widget {
-				WidgetKind::Button(b) if b.is_clicked() => unsafe {
-					events.enqueue_unchecked(Event::ButtonClicked {
-						page_idx,
-						widget_id: idx,
-					})
-				},
-				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
-					events.enqueue_unchecked(Event::CheckboxToggled {
-						page_idx,
-						widget_id: idx,
-					})
-				},
-				_ => (),
-			}
-
-			widget.draw(style, rect, target)?;
-		}
-
-		Ok(())
-	}
-
 	pub fn focus_next(&mut self) {
 		self.set_focused((self.focus_idx + 1) % self.count);
 	}
