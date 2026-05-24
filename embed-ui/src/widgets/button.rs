@@ -93,8 +93,6 @@ impl Widget for Button {
 		)
 		.draw(target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
@@ -119,6 +117,10 @@ impl Widget for Button {
 		}
 	}
 
+	fn mark_clean(&mut self) {
+		self.changed = false
+	}
+
 	fn set_focus(&mut self, focus: bool) {
 		if self.focus != focus {
 			self.changed = true;
@@ -134,7 +136,7 @@ impl Widget for Button {
 		true
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 }

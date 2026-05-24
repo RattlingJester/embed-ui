@@ -75,8 +75,6 @@ impl Widget for Checkbox {
 
 		rect.into_styled(border_style).draw(target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
@@ -101,6 +99,10 @@ impl Widget for Checkbox {
 		self.size
 	}
 
+	fn mark_clean(&mut self) {
+		self.changed = false
+	}
+
 	fn set_focus(&mut self, focus: bool) {
 		if self.focus != focus {
 			self.changed = true;
@@ -112,7 +114,7 @@ impl Widget for Checkbox {
 		true
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 }

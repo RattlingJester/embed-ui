@@ -53,6 +53,10 @@ impl Widget for Label {
 
 	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
+	fn mark_clean(&mut self) {
+		self.changed = false
+	}
+
 	fn set_focus(&mut self, _focus: bool) {}
 
 	fn size(&self) -> Size {
@@ -63,7 +67,7 @@ impl Widget for Label {
 		false
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 }

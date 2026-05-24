@@ -45,9 +45,13 @@ impl Widget for Separator {
 		self.size
 	}
 
+	fn mark_clean(&mut self) {
+		self.changed = false
+	}
+
 	fn set_focus(&mut self, _focus: bool) {}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 

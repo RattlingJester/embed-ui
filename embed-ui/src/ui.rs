@@ -6,7 +6,7 @@ use crate::{
 	input::{Event, Interaction},
 	style::Style,
 	widgets::{
-		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		Widget, WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
 		textbox::Textbox,
 	},
 };
@@ -163,6 +163,14 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 
 	pub fn get_page_mut(&mut self, idx: u8) -> &mut Page<WIDGET_COUNT> {
 		&mut self.pages[idx as usize]
+	}
+
+	pub fn mark_clean(&mut self) {
+		let page = self.current_page_mut();
+
+		for (widget, _rect) in page.iter_mut() {
+			widget.mark_clean();
+		}
 	}
 
 	pub fn draw<D: DrawTarget<Color = C>>(

@@ -61,7 +61,7 @@ impl<const S: usize> Page<S> {
 				_ => (),
 			}
 
-			if widget.is_changed() {
+			if widget.is_dirty() {
 				widget.draw(style, rect, target)?;
 			}
 		}
