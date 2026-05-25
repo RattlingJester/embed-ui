@@ -16,10 +16,11 @@ pub type WidgetId = usize;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
-	widgets:   [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
-	count:     usize,
-	focus_idx: WidgetId,
-	layout:    Layout,
+	widgets:           [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+	count:             usize,
+	focus_idx:         WidgetId,
+	layout:            Layout,
+	pub redraw_needed: bool,
 }
 
 impl<const S: usize> Page<S> {
@@ -31,6 +32,7 @@ impl<const S: usize> Page<S> {
 			count: 0,
 			focus_idx: 0,
 			layout,
+			redraw_needed: true,
 		}
 	}
 
@@ -42,29 +44,37 @@ impl<const S: usize> Page<S> {
 		page_idx: u8,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		for (idx, (widget, rect)) in self.iter_mut().enumerate() {
+		if self.redraw_needed {
+			target.clear(style.screen_bg)?;
+		}
+
+		for (widget_id, (widget, rect)) in
+			&mut self.widgets[..self.count].iter_mut().flatten().enumerate()
+		{
 			widget.interact(rect, interaction);
 
 			match widget {
 				WidgetKind::Button(b) if b.is_clicked() => unsafe {
 					events.enqueue_unchecked(Event::ButtonClicked {
 						page_idx,
-						widget_id: idx,
+						widget_id,
 					})
 				},
 				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
 					events.enqueue_unchecked(Event::CheckboxToggled {
 						page_idx,
-						widget_id: idx,
+						widget_id,
 					})
 				},
 				_ => (),
 			}
 
-			if widget.is_dirty() {
+			if widget.is_dirty() || self.redraw_needed {
 				widget.draw(style, rect, target)?;
 			}
 		}
+
+		self.redraw_needed = false;
 
 		Ok(())
 	}
@@ -337,12 +347,12 @@ impl Layout {
 		})
 	}
 
-	const fn space_available(&self) -> Size {
-		Size::new(
-			self.bounds.width - self.pos.x as u32,
-			self.bounds.height - self.pos.y as u32,
-		)
-	}
+	// const fn space_available(&self) -> Size {
+	// 	Size::new(
+	// 		self.bounds.width - self.pos.x as u32,
+	// 		self.bounds.height - self.pos.y as u32,
+	// 	)
+	// }
 
 	const fn check_bounds(&self, pos: Size) -> bool {
 		pos.width <= self.bounds.width && pos.height <= self.bounds.height

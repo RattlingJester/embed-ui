@@ -6,7 +6,7 @@ use crate::{
 	input::{Event, Interaction},
 	style::Style,
 	widgets::{
-		Widget, WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
 		textbox::Textbox,
 	},
 };
@@ -38,9 +38,10 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		self.events.dequeue()
 	}
 
-	pub const fn switch_to_page(&mut self, idx: u8) -> bool {
+	pub fn switch_to_page(&mut self, idx: u8) -> bool {
 		if idx < PAGE_COUNT as u8 {
 			self.active_page_idx = idx;
+			self.current_page_mut().redraw_needed = true;
 			true
 		} else {
 			false
@@ -50,6 +51,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	/// Switches to the next page, wrapping back to the first page if at the end.
 	pub fn next_page(&mut self) {
 		self.active_page_idx = (self.active_page_idx + 1) % PAGE_COUNT as u8;
+		self.current_page_mut().redraw_needed = true;
 	}
 
 	/// Switches to the previous page, wrapping to the last page if at the beginning.
@@ -59,6 +61,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		} else {
 			self.active_page_idx - 1
 		};
+		self.current_page_mut().redraw_needed = true;
 	}
 
 	/// Retrieves the currently active page immutably
@@ -157,14 +160,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 
 	pub fn get_page_mut(&mut self, idx: u8) -> &mut Page<WIDGET_COUNT> {
 		&mut self.pages[idx as usize]
-	}
-
-	pub fn mark_clean(&mut self) {
-		let page = self.current_page_mut();
-
-		for (widget, _rect) in page.iter_mut() {
-			widget.mark_clean();
-		}
 	}
 
 	pub fn draw<D: DrawTarget<Color = C>>(

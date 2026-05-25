@@ -32,7 +32,6 @@ pub trait Widget {
 
 	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>);
 	fn set_focus(&mut self, focus: bool);
-	fn mark_clean(&mut self);
 
 	fn size(&self) -> Size;
 	fn is_focusable(&self) -> bool;

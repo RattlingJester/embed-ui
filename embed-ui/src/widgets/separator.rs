@@ -36,6 +36,8 @@ impl Widget for Separator {
 
 		rect.draw_styled(&style, target)?;
 
+		self.changed = false;
+
 		Ok(())
 	}
 
@@ -43,10 +45,6 @@ impl Widget for Separator {
 
 	fn size(&self) -> Size {
 		self.size
-	}
-
-	fn mark_clean(&mut self) {
-		self.changed = false
 	}
 
 	fn set_focus(&mut self, _focus: bool) {}

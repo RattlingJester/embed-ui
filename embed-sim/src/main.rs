@@ -21,12 +21,12 @@ use embed_ui::{
 // 	};
 // }
 
-// #[derive(Debug, Clone, Copy)]
-// #[repr(u8)]
-// pub enum Pages {
-// 	Main     = 0,
-// 	Settings = 1,
-// }
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum Pages {
+	Main     = 0,
+	Settings = 1,
+}
 
 struct WidgetIDs<const WIDGET_COUNT: usize> {
 	pub ids: [WidgetId; WIDGET_COUNT],
@@ -141,7 +141,7 @@ fn main() {
 			}
 		}
 
-		if let Some(b) = ui.get_button_mut(0, elements_main.ids[0]) {
+		if let Some(b) = ui.get_button_mut(Pages::Main as u8, elements_main.ids[0]) {
 			let text: heapless::String<MAX_TEXT_LEN> = heapless::format!("ZALUPA {}", i).unwrap();
 			b.set_text(&text).unwrap();
 		}
