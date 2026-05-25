@@ -1,5 +1,5 @@
 use embedded_graphics::{
-	prelude::{DrawTarget, Point, Size},
+	prelude::{DrawTarget, DrawTargetExt, Point, Size},
 	primitives::Rectangle,
 };
 use heapless::spsc::Queue;
@@ -7,6 +7,7 @@ use heapless::spsc::Queue;
 use crate::{
 	Error,
 	input::{Event, Interaction},
+	rects_overlap,
 	style::Style,
 	widgets::{Widget, WidgetKind},
 };
@@ -16,11 +17,11 @@ pub type WidgetId = usize;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
-	widgets:           [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
-	count:             usize,
-	focus_idx:         WidgetId,
-	layout:            Layout,
-	pub redraw_needed: bool,
+	widgets:         [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+	count:           usize,
+	focus_idx:       WidgetId,
+	pub layout:      Layout,
+	pub frame_dirty: bool,
 }
 
 impl<const S: usize> Page<S> {
@@ -32,24 +33,18 @@ impl<const S: usize> Page<S> {
 			count: 0,
 			focus_idx: 0,
 			layout,
-			redraw_needed: true,
+			frame_dirty: true,
 		}
 	}
 
-	pub fn draw<D: DrawTarget, const N: usize>(
+	pub fn process<const N: usize>(
 		&mut self,
-		style: &Style<D::Color>,
 		interaction: Option<Interaction>,
 		events: &mut Queue<Event, N>,
 		page_idx: u8,
-		target: &mut D,
-	) -> Result<(), D::Error> {
-		if self.redraw_needed {
-			target.clear(style.screen_bg)?;
-		}
-
+	) {
 		for (widget_id, (widget, rect)) in
-			&mut self.widgets[..self.count].iter_mut().flatten().enumerate()
+			self.widgets[..self.count].iter_mut().flatten().enumerate()
 		{
 			widget.interact(rect, interaction);
 
@@ -68,13 +63,42 @@ impl<const S: usize> Page<S> {
 				},
 				_ => (),
 			}
+		}
+	}
 
-			if widget.is_dirty() || self.redraw_needed {
-				widget.draw(style, rect, target)?;
+	pub fn draw_strip<D: DrawTarget>(
+		&mut self,
+		style: &Style<D::Color>,
+		strip: Rectangle,
+		target: &mut D,
+	) -> Result<(), D::Error> {
+		if self.frame_dirty {
+			target.clear(style.screen_bg)?;
+		}
+
+		let offset = Point::zero() - strip.top_left;
+
+		let mut translated = target.translated(offset);
+		let mut canvas = translated.clipped(&Rectangle::new(Point::zero(), strip.size));
+
+		for (widget, rect) in self.widgets[..self.count].iter_mut().flatten() {
+			if (widget.is_dirty() || self.frame_dirty) && rects_overlap(rect, &strip) {
+				widget.draw(style, rect, &mut canvas)?;
 			}
 		}
 
-		self.redraw_needed = false;
+		Ok(())
+	}
+
+	pub fn draw<D: DrawTarget>(
+		&mut self,
+		style: &Style<D::Color>,
+		target: &mut D,
+	) -> Result<(), D::Error> {
+		let full = Rectangle::new(Point::zero(), self.layout.bounds);
+		self.draw_strip(style, full, target)?;
+
+		self.frame_dirty = false;
 
 		Ok(())
 	}
@@ -213,7 +237,7 @@ pub struct Layout {
 	/// Height of current row
 	row_height: usize,
 	/// Bound of the placer
-	bounds:     Size,
+	pub bounds: Size,
 	/// Wrap to the next row if widget does not fit
 	pub wrap:   bool,
 	/// Widget alignment
@@ -347,14 +371,14 @@ impl Layout {
 		})
 	}
 
+	const fn check_bounds(&self, pos: Size) -> bool {
+		pos.width <= self.bounds.width && pos.height <= self.bounds.height
+	}
+
 	// const fn space_available(&self) -> Size {
 	// 	Size::new(
 	// 		self.bounds.width - self.pos.x as u32,
 	// 		self.bounds.height - self.pos.y as u32,
 	// 	)
 	// }
-
-	const fn check_bounds(&self, pos: Size) -> bool {
-		pos.width <= self.bounds.width && pos.height <= self.bounds.height
-	}
 }

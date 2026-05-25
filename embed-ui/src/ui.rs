@@ -1,4 +1,7 @@
-use embedded_graphics::prelude::{DrawTarget, PixelColor};
+use embedded_graphics::{
+	prelude::{DrawTarget, PixelColor, Point},
+	primitives::Rectangle,
+};
 use heapless::spsc::Queue;
 
 use crate::{
@@ -41,7 +44,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	pub fn switch_to_page(&mut self, idx: u8) -> bool {
 		if idx < PAGE_COUNT as u8 {
 			self.active_page_idx = idx;
-			self.current_page_mut().redraw_needed = true;
+			self.current_page_mut().frame_dirty = true;
 			true
 		} else {
 			false
@@ -51,7 +54,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	/// Switches to the next page, wrapping back to the first page if at the end.
 	pub fn next_page(&mut self) {
 		self.active_page_idx = (self.active_page_idx + 1) % PAGE_COUNT as u8;
-		self.current_page_mut().redraw_needed = true;
+		self.current_page_mut().frame_dirty = true;
 	}
 
 	/// Switches to the previous page, wrapping to the last page if at the beginning.
@@ -61,7 +64,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		} else {
 			self.active_page_idx - 1
 		};
-		self.current_page_mut().redraw_needed = true;
+		self.current_page_mut().frame_dirty = true;
 	}
 
 	/// Retrieves the currently active page immutably
@@ -170,14 +173,30 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		self.interaction = interaction;
 
 		let active_page = &mut self.pages[self.active_page_idx as usize];
+		active_page.process(interaction, &mut self.events, self.active_page_idx);
 
-		active_page.draw(
-			&self.style,
-			self.interaction,
-			&mut self.events,
-			self.active_page_idx,
-			target,
-		)?;
+		active_page.draw(&self.style, target)?;
+
+		active_page.frame_dirty = false;
+
+		Ok(())
+	}
+
+	pub fn draw_strips<D: DrawTarget<Color = C>>(
+		&mut self,
+		interaction: Option<Interaction>,
+		target: &mut D,
+	) -> Result<(), D::Error> {
+		self.interaction = interaction;
+
+		let active_page = &mut self.pages[self.active_page_idx as usize];
+		active_page.process(interaction, &mut self.events, self.active_page_idx);
+
+		let bounds = active_page.layout.bounds;
+
+		active_page.draw_strip(&self.style, Rectangle::new(Point::zero(), bounds), target)?;
+
+		active_page.frame_dirty = false;
 
 		Ok(())
 	}
