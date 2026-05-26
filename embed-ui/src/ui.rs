@@ -1,5 +1,5 @@
 use embedded_graphics::{
-	prelude::{DrawTarget, PixelColor, Point, Size},
+	prelude::{DrawTarget, PixelColor},
 	primitives::Rectangle,
 };
 use heapless::spsc::Queue;
@@ -185,7 +185,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	pub fn draw_strips<D: DrawTarget<Color = C>>(
 		&mut self,
 		interaction: Option<Interaction>,
-		strip_bounds: Size,
+		strip_bounds: Rectangle,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		self.interaction = interaction;
@@ -193,11 +193,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		let active_page = &mut self.pages[self.active_page_idx as usize];
 		active_page.process(interaction, &mut self.events, self.active_page_idx);
 
-		active_page.draw_strip(
-			&self.style,
-			Rectangle::new(Point::zero(), strip_bounds),
-			target,
-		)?;
+		active_page.draw_strip(&self.style, strip_bounds, target)?;
 
 		active_page.frame_dirty = false;
 
