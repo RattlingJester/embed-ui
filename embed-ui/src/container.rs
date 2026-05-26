@@ -64,6 +64,13 @@ impl<const S: usize> Page<S> {
 				_ => (),
 			}
 		}
+
+		if !self.frame_dirty {
+			self.frame_dirty = self.widgets[..self.count]
+				.iter()
+				.flatten()
+				.any(|(w, _)| w.is_dirty());
+		}
 	}
 
 	pub fn draw_strip<D: DrawTarget>(
