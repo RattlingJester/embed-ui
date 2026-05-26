@@ -9,7 +9,7 @@ use crate::{
 	input::{Event, Interaction},
 	style::Style,
 	widgets::{
-		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		Widget, WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
 		textbox::Textbox,
 	},
 };
@@ -182,7 +182,12 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	}
 
 	pub fn end_frame(&mut self) {
-		self.current_page_mut().frame_dirty = false;
+		let page = self.current_page_mut();
+
+		page.frame_dirty = false;
+		for (w, _rect) in page.iter_mut() {
+			w.mark_clean();
+		}
 	}
 
 	/// Draw into full framebuffer

@@ -48,14 +48,16 @@ impl Widget for Label {
 		let char_style = MonoTextStyle::new(style.font, style.text_color);
 		Text::new(&self.text, rect.center(), char_style).draw(target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
 	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
 	fn set_focus(&mut self, _focus: bool) {}
+
+	fn mark_clean(&mut self) {
+		self.changed = false;
+	}
 
 	fn size(&self) -> Size {
 		self.size

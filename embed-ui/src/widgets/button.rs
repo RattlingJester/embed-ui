@@ -93,8 +93,6 @@ impl Widget for Button {
 		)
 		.draw(target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
@@ -117,6 +115,10 @@ impl Widget for Button {
 			self.pressed = new_pressed;
 			self.changed = true;
 		}
+	}
+
+	fn mark_clean(&mut self) {
+		self.changed = false;
 	}
 
 	fn set_focus(&mut self, focus: bool) {

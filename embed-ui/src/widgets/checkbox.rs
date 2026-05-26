@@ -75,8 +75,6 @@ impl Widget for Checkbox {
 
 		rect.into_styled(border_style).draw(target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
@@ -95,6 +93,10 @@ impl Widget for Checkbox {
 		if !new_pressed {
 			self.held = false;
 		}
+	}
+
+	fn mark_clean(&mut self) {
+		self.changed = false;
 	}
 
 	fn size(&self) -> Size {

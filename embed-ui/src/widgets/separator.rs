@@ -36,12 +36,14 @@ impl Widget for Separator {
 
 		rect.draw_styled(&style, target)?;
 
-		self.changed = false;
-
 		Ok(())
 	}
 
 	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
+
+	fn mark_clean(&mut self) {
+		self.changed = true
+	}
 
 	fn size(&self) -> Size {
 		self.size
