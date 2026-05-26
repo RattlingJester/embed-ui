@@ -176,8 +176,6 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let idx = self.active_page_idx as usize;
-
-		target.clear(self.style.screen_bg)?;
 		self.pages[idx].draw_strip(&self.style, strip, target)
 	}
 
