@@ -84,11 +84,12 @@ impl<const S: usize> Page<S> {
 		// }
 
 		// let offset = Point::zero() - strip.top_left;
+		let offset = strip.top_left;
 
-		// let mut translated = target.translated(offset);
-		// let mut canvas = translated.clipped(&Rectangle::new(Point::zero(), strip.size));
+		let mut translated = target.translated(offset);
+		let mut canvas = translated.clipped(&Rectangle::new(Point::zero(), strip.size));
 
-		let mut canvas = target.clipped(&strip);
+		// let mut canvas = target.clipped(&strip);
 
 		for (widget, rect) in self.widgets[..self.count].iter_mut().flatten() {
 			if (widget.is_dirty() || self.frame_dirty) && rects_overlap(rect, &strip) {
