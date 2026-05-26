@@ -65,12 +65,12 @@ impl<const S: usize> Page<S> {
 			}
 		}
 
-		if !self.frame_dirty {
-			self.frame_dirty = self.widgets[..self.count]
-				.iter()
-				.flatten()
-				.any(|(w, _)| w.is_dirty());
-		}
+		// if !self.frame_dirty {
+		// 	self.frame_dirty = self.widgets[..self.count]
+		// 		.iter()
+		// 		.flatten()
+		// 		.any(|(w, _)| w.is_dirty());
+		// }
 	}
 
 	pub fn draw_strip<D: DrawTarget>(
@@ -79,9 +79,9 @@ impl<const S: usize> Page<S> {
 		strip: Rectangle,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		if self.frame_dirty {
-			target.clear(style.screen_bg)?;
-		}
+		// if self.frame_dirty {
+		// 	target.clear(style.screen_bg)?;
+		// }
 
 		let offset = Point::zero() - strip.top_left;
 
