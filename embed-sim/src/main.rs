@@ -52,8 +52,10 @@ fn main() {
 		"Screen pixels count: {SCREEN_PIXELS_COUNT}, strip count: {STRIP_COUNT}, strip height: {STRIP_H}"
 	);
 
+	let mut bufffer = [Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT];
+
 	let painter: SplitPainter<10, SCREEN_W, STRIP_H, STRIP_PIXEL_COUNT, Rgb666> =
-		SplitPainter::new([Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT]);
+		SplitPainter::new(&mut bufffer);
 
 	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 
@@ -154,7 +156,10 @@ fn main() {
 			b.set_text(&text).unwrap();
 		}
 
-		ui.draw(interaction, &mut display).unwrap();
+		ui.draw::<SimulatorDisplay<Rgb666>, _>(interaction, |rect, fb| {
+			display.fill_contiguous(rect, fb.data)
+		})
+		.unwrap();
 
 		i += 1;
 	}

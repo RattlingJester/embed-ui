@@ -1,4 +1,8 @@
-use embedded_graphics::prelude::{DrawTarget, PixelColor};
+use embedded_graphics::{
+	prelude::{DrawTarget, PixelColor},
+	primitives::Rectangle,
+};
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::spsc::Queue;
 
 use crate::{
@@ -14,7 +18,13 @@ use crate::{
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
-pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>> {
+pub struct Ui<
+	const WIDGET_COUNT: usize,
+	const PAGE_COUNT: usize,
+	const N: usize,
+	C: PixelColor,
+	P: Painter<C, N>,
+> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
 	pub painter:     P,
@@ -23,8 +33,13 @@ pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor,
 	pub style:       Style<C>,
 }
 
-impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>>
-	Ui<WIDGET_COUNT, PAGE_COUNT, C, P>
+impl<
+	const WIDGET_COUNT: usize,
+	const PAGE_COUNT: usize,
+	const N: usize,
+	C: PixelColor,
+	P: Painter<C, N>,
+> Ui<WIDGET_COUNT, PAGE_COUNT, N, C, P>
 {
 	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], painter: P, style: Style<C>) -> Self {
 		Self {
@@ -165,16 +180,20 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 		&mut self.pages[idx as usize]
 	}
 
-	pub fn draw<D: DrawTarget<Color = C>>(
+	pub fn draw<
+		D: DrawTarget<Color = C>,
+		F: FnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
+	>(
 		&mut self,
 		interaction: Option<Interaction>,
-		target: &mut D,
+		finish: F,
 	) -> Result<(), D::Error> {
 		let page = &mut self.pages[self.active_page_idx as usize];
 
 		page.process(interaction, &mut self.events, self.active_page_idx);
 
-		self.painter.draw(&self.style, page, target)?;
+		self.painter
+			.draw::<WIDGET_COUNT, D, F>(&self.style, page, finish)?;
 
 		for (w, _rect) in page.iter_mut() {
 			w.mark_clean();
