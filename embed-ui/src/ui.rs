@@ -14,13 +14,7 @@ use crate::{
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
-pub struct Ui<
-	const WIDGET_COUNT: usize,
-	const PAGE_COUNT: usize,
-	const N: usize,
-	C: PixelColor,
-	P: Painter<C, N>,
-> {
+pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
 	pub painter:     P,
@@ -29,13 +23,8 @@ pub struct Ui<
 	pub style:       Style<C>,
 }
 
-impl<
-	const WIDGET_COUNT: usize,
-	const PAGE_COUNT: usize,
-	const N: usize,
-	C: PixelColor,
-	P: Painter<C, N>,
-> Ui<WIDGET_COUNT, PAGE_COUNT, N, C, P>
+impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>>
+	Ui<WIDGET_COUNT, PAGE_COUNT, C, P>
 {
 	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], painter: P, style: Style<C>) -> Self {
 		Self {

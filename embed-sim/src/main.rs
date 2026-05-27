@@ -52,8 +52,9 @@ fn main() {
 		"Screen pixels count: {SCREEN_PIXELS_COUNT}, strip count: {STRIP_COUNT}, strip height: {STRIP_H}"
 	);
 
-	let painter: SplitPainter<10, SCREEN_W, STRIP_H, STRIP_PIXEL_COUNT, Rgb666> =
-		SplitPainter::new([Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT]);
+	let buf = [Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT];
+
+	let painter: SplitPainter<10, SCREEN_W, STRIP_H, _, _> = SplitPainter::new(buf);
 
 	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 
