@@ -17,6 +17,8 @@ pub trait Painter<C: PixelColor, const N: usize> {
 	fn data_mut(&mut self) -> FrameBuf<C, [C; N]>;
 }
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug)]
 pub struct SplitPainter<
 	const STRIP_COUNT: usize,
 	const STRIP_W: usize,
@@ -57,7 +59,7 @@ impl<
 		for strip in 0..STRIP_COUNT {
 			let y0 = strip * STRIP_H;
 
-			let mut buf = FrameBuf::new(self.buffer, STRIP_W, STRIP_H);
+			let mut buf = FrameBuf::new(&mut self.buffer, STRIP_W, STRIP_H);
 
 			buf.clear(style.screen_bg);
 
