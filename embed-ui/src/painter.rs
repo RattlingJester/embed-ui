@@ -14,7 +14,7 @@ pub trait Painter<C: PixelColor, const N: usize> {
 		target: &mut D,
 	) -> Result<(), D::Error>;
 
-	fn data_mut(&mut self) -> FrameBuf<C, [C; N]>;
+	fn data_mut(&mut self) -> FrameBuf<C, &mut [C; N]>;
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -82,7 +82,7 @@ impl<
 		Ok(())
 	}
 
-	fn data_mut(&mut self) -> FrameBuf<C, [C; N]> {
-		FrameBuf::new(self.buffer, STRIP_W, STRIP_H)
+	fn data_mut(&mut self) -> FrameBuf<C, &mut [C; N]> {
+		FrameBuf::new(&mut self.buffer, STRIP_W, STRIP_H)
 	}
 }
