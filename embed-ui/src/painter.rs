@@ -7,10 +7,10 @@ use embedded_graphics_framebuf::FrameBuf;
 use crate::{container::Page, style::Style, widgets::Widget};
 
 pub trait Painter<C: PixelColor, const N: usize> {
-	fn draw<
+	async fn draw<
 		const WIDGET_COUNT: usize,
 		D: DrawTarget<Color = C>,
-		F: FnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
+		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
 	>(
 		&mut self,
 		style: &Style<C>,
@@ -55,10 +55,10 @@ impl<
 	C: PixelColor,
 > Painter<C, N> for SplitPainter<'a, STRIP_COUNT, STRIP_W, STRIP_H, N, C>
 {
-	fn draw<
+	async fn draw<
 		const WIDGET_COUNT: usize,
 		D: DrawTarget<Color = C>,
-		F: FnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
+		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
 	>(
 		&mut self,
 		style: &Style<C>,
@@ -85,7 +85,7 @@ impl<
 				}
 			}
 
-			finish(&strip_rect, &mut buf)?;
+			finish(&strip_rect, &mut buf).await?;
 
 			// target.fill_contiguous(&strip_rect, self.buffer)?;
 		}
