@@ -1,5 +1,5 @@
 use embedded_graphics::{
-	prelude::{DrawTarget, DrawTargetExt, Point, Size},
+	prelude::{Point, Size},
 	primitives::Rectangle,
 };
 use heapless::spsc::Queue;
@@ -7,8 +7,6 @@ use heapless::spsc::Queue;
 use crate::{
 	Error,
 	input::{Event, Interaction},
-	rects_overlap,
-	style::Style,
 	widgets::{Widget, WidgetKind},
 };
 
@@ -17,11 +15,10 @@ pub type WidgetId = usize;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
-	widgets:         [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
-	count:           usize,
-	focus_idx:       WidgetId,
-	pub layout:      Layout,
-	pub frame_dirty: bool,
+	pub widgets: [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+	pub count:   usize,
+	focus_idx:   WidgetId,
+	pub layout:  Layout,
 }
 
 impl<const S: usize> Page<S> {
@@ -33,7 +30,6 @@ impl<const S: usize> Page<S> {
 			count: 0,
 			focus_idx: 0,
 			layout,
-			frame_dirty: true,
 		}
 	}
 
@@ -64,50 +60,6 @@ impl<const S: usize> Page<S> {
 				_ => (),
 			}
 		}
-
-		// if !self.frame_dirty {
-		// 	self.frame_dirty = self.widgets[..self.count]
-		// 		.iter()
-		// 		.flatten()
-		// 		.any(|(w, _)| w.is_dirty());
-		// }
-	}
-
-	pub fn draw_strip<D: DrawTarget>(
-		&mut self,
-		style: &Style<D::Color>,
-		strip: Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
-		// if self.frame_dirty {
-		// 	target.clear(style.screen_bg)?;
-		// }
-
-		let offset = Point::zero() - strip.top_left;
-
-		let mut translated = target.translated(offset);
-		let mut canvas = translated.clipped(&Rectangle::new(Point::zero(), strip.size));
-
-		for (widget, rect) in self.widgets[..self.count].iter_mut().flatten() {
-			// if (widget.is_dirty() || self.frame_dirty) && rects_overlap(rect, &strip) {
-			widget.draw(style, rect, &mut canvas)?;
-			// }
-		}
-
-		Ok(())
-	}
-
-	pub fn draw<D: DrawTarget>(
-		&mut self,
-		style: &Style<D::Color>,
-		target: &mut D,
-	) -> Result<(), D::Error> {
-		let full = Rectangle::new(Point::zero(), self.layout.bounds);
-		self.draw_strip(style, full, target)?;
-
-		self.frame_dirty = false;
-
-		Ok(())
 	}
 
 	pub fn focus_next(&mut self) {

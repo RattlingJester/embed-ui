@@ -1,13 +1,15 @@
-use embedded_graphics::{pixelcolor::Rgb565, prelude::Size};
+use embedded_graphics::prelude::Size;
 use embedded_graphics_simulator::{
 	OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 	sdl2::{Keycode, MouseButton},
 };
 
 use embed_ui::{
-	DrawTarget,
+	DrawTarget, Rgb666,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	input::{Event, Interaction},
+	painter::SplitPainter,
+	style::DEFAULT_STYLE_666,
 	ui::Ui,
 	widgets::{
 		MAX_TEXT_LEN, WidgetKind, button::Button, checkbox::Checkbox, label::Label,
@@ -15,11 +17,12 @@ use embed_ui::{
 	},
 };
 
-// macro_rules! to_page {
-// 	($page:expr) => {
-// 		unsafe { core::mem::transmute::<u8, Pages>($page) }
-// 	};
-// }
+const SCREEN_W: usize = 320;
+const SCREEN_H: usize = 480;
+const SCREEN_PIXELS_COUNT: usize = SCREEN_W * SCREEN_H;
+
+const STRIP_COUNT: usize = 10;
+const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -36,18 +39,18 @@ fn main() {
 	let (page_main, elements_main) = main_page().unwrap();
 	let (page_settings, _elements_sett) = settings_page().unwrap();
 
-	let mut display = SimulatorDisplay::<Rgb565>::new(Size::new(320, 480));
+	let mut display = SimulatorDisplay::<Rgb666>::new(Size::new(320, 480));
 
 	let output_settings = OutputSettingsBuilder::new().scale(2).build();
 	let mut window = Window::new("Test", &output_settings);
 
 	window.update(&display);
-	display.clear(embed_ui::style::DEFAULT_STYLE_565.screen_bg);
+	display.clear(embed_ui::style::DEFAULT_STYLE_666.screen_bg);
 
-	let mut ui = Ui::new(
-		[page_main, page_settings],
-		embed_ui::style::DEFAULT_STYLE_565,
-	);
+	let painter: SplitPainter<10, SCREEN_W, STRIP_H, SCREEN_PIXELS_COUNT, Rgb666> =
+		SplitPainter::new([Rgb666::new(0, 0, 0); SCREEN_PIXELS_COUNT]);
+
+	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 
 	let mut interaction = None;
 
@@ -146,7 +149,7 @@ fn main() {
 			b.set_text(&text).unwrap();
 		}
 
-		ui.draw(interaction, &mut display);
+		ui.draw(interaction, &mut display).unwrap();
 
 		i += 1;
 	}

@@ -76,7 +76,7 @@ impl Widget for Textbox {
 	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
 
 	fn mark_clean(&mut self) {
-		self.changed = true
+		self.changed = false
 	}
 
 	fn set_focus(&mut self, _focus: bool) {}

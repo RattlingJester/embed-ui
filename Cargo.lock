@@ -130,6 +130,7 @@ version = "0.1.0"
 dependencies = [
  "embed-ui",
  "embedded-graphics",
+ "embedded-graphics-framebuf",
  "embedded-graphics-simulator",
  "heapless",
 ]
@@ -140,9 +141,19 @@ version = "0.1.0"
 dependencies = [
  "defmt 1.1.0",
  "embedded-graphics",
+ "embedded-graphics-framebuf",
  "enum_dispatch",
  "heapless",
  "thiserror",
+]
+
+[[package]]
+name = "embedded-dma"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "994f7e5b5cb23521c22304927195f236813053eb9c065dd2226a32ba64695446"
+dependencies = [
+ "stable_deref_trait",
 ]
 
 [[package]]
@@ -170,6 +181,16 @@ dependencies = [
  "az",
  "byteorder",
  "defmt 0.3.100",
+]
+
+[[package]]
+name = "embedded-graphics-framebuf"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22354420f68727fa24d1e2741dae1e9a041065e80fb63b35a8d19c647a85be76"
+dependencies = [
+ "embedded-dma",
+ "embedded-graphics",
 ]
 
 [[package]]

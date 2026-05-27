@@ -1,12 +1,10 @@
-use embedded_graphics::{
-	prelude::{DrawTarget, PixelColor, Point},
-	primitives::Rectangle,
-};
+use embedded_graphics::prelude::{DrawTarget, PixelColor};
 use heapless::spsc::Queue;
 
 use crate::{
 	container::{Page, WidgetId},
 	input::{Event, Interaction},
+	painter::Painter,
 	style::Style,
 	widgets::{
 		Widget, WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
@@ -16,24 +14,26 @@ use crate::{
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
-pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor> {
+pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
+	painter:         P,
 	active_page_idx: u8,
-	// interaction:     Option<Interaction>,
+	dirty_frame:     bool,
 	pub style:       Style<C>,
 }
 
-impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
-	Ui<WIDGET_COUNT, PAGE_COUNT, C>
+impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>>
+	Ui<WIDGET_COUNT, PAGE_COUNT, C, P>
 {
-	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], style: Style<C>) -> Self {
+	pub const fn new(pages: [Page<WIDGET_COUNT>; PAGE_COUNT], painter: P, style: Style<C>) -> Self {
 		Self {
 			pages,
 			events: Queue::new(),
+			painter,
 			active_page_idx: 0,
+			dirty_frame: false,
 			style,
-			// interaction: None,
 		}
 	}
 
@@ -43,8 +43,8 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 
 	pub fn switch_to_page(&mut self, idx: u8) -> bool {
 		if idx < PAGE_COUNT as u8 {
+			self.dirty_frame = true;
 			self.active_page_idx = idx;
-			self.current_page_mut().frame_dirty = true;
 			true
 		} else {
 			false
@@ -54,7 +54,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 	/// Switches to the next page, wrapping back to the first page if at the end.
 	pub fn next_page(&mut self) {
 		self.active_page_idx = (self.active_page_idx + 1) % PAGE_COUNT as u8;
-		self.current_page_mut().frame_dirty = true;
+		self.dirty_frame = true;
 	}
 
 	/// Switches to the previous page, wrapping to the last page if at the beginning.
@@ -64,7 +64,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		} else {
 			self.active_page_idx - 1
 		};
-		self.current_page_mut().frame_dirty = true;
+		self.dirty_frame = true;
 	}
 
 	/// Retrieves the currently active page immutably
@@ -165,39 +165,21 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor>
 		&mut self.pages[idx as usize]
 	}
 
-	pub fn begin_frame(&mut self, interaction: Option<Interaction>) {
-		let idx = self.active_page_idx;
-		self.pages[idx as usize].process(interaction, &mut self.events, idx);
-	}
-
-	pub fn draw_strip<D: DrawTarget<Color = C>>(
-		&mut self,
-		strip: Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
-		let idx = self.active_page_idx as usize;
-		self.pages[idx].draw_strip(&self.style, strip, target)
-	}
-
-	pub fn end_frame(&mut self) {
-		let page = self.current_page_mut();
-
-		page.frame_dirty = false;
-		for (w, _rect) in page.iter_mut() {
-			w.mark_clean();
-		}
-	}
-
-	/// Draw into full framebuffer
 	pub fn draw<D: DrawTarget<Color = C>>(
 		&mut self,
 		interaction: Option<Interaction>,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		self.begin_frame(interaction);
-		let bounds = self.current_page().layout.bounds;
-		self.draw_strip(Rectangle::new(Point::zero(), bounds), target)?;
-		self.end_frame();
+		let page = &mut self.pages[self.active_page_idx as usize];
+
+		page.process(interaction, &mut self.events, self.active_page_idx);
+
+		self.painter.draw(&self.style, page, target)?;
+
+		for (w, _rect) in page.iter_mut() {
+			w.mark_clean();
+		}
+
 		Ok(())
 	}
 }
