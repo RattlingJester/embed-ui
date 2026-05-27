@@ -1,8 +1,4 @@
-use embedded_graphics::{
-	prelude::{DrawTarget, PixelColor},
-	primitives::Rectangle,
-};
-use embedded_graphics_framebuf::FrameBuf;
+use embedded_graphics::prelude::{DrawTarget, PixelColor};
 use heapless::spsc::Queue;
 
 use crate::{
@@ -180,21 +176,16 @@ impl<
 		&mut self.pages[idx as usize]
 	}
 
-	pub async fn draw<
-		D: DrawTarget<Color = C>,
-		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
-	>(
+	pub fn draw<D: DrawTarget<Color = C>>(
 		&mut self,
 		interaction: Option<Interaction>,
-		finish: F,
+		target: &mut D,
 	) -> Result<(), D::Error> {
 		let page = &mut self.pages[self.active_page_idx as usize];
 
 		page.process(interaction, &mut self.events, self.active_page_idx);
 
-		self.painter
-			.draw::<WIDGET_COUNT, D, F>(&self.style, page, finish)
-			.await?;
+		self.painter.draw(&self.style, page, target)?;
 
 		for (w, _rect) in page.iter_mut() {
 			w.mark_clean();

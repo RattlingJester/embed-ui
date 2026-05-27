@@ -7,68 +7,57 @@ use embedded_graphics_framebuf::FrameBuf;
 use crate::{container::Page, style::Style, widgets::Widget};
 
 pub trait Painter<C: PixelColor, const N: usize> {
-	fn draw<
-		const WIDGET_COUNT: usize,
-		D: DrawTarget<Color = C>,
-		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
-	>(
+	fn draw<const WIDGET_COUNT: usize, D: DrawTarget<Color = C>>(
 		&mut self,
 		style: &Style<C>,
 		page: &mut Page<WIDGET_COUNT>,
-		finish: F,
-	) -> impl Future<Output = Result<(), D::Error>>;
+		target: &mut D,
+	) -> Result<(), D::Error>;
 
 	fn data_mut(&mut self) -> FrameBuf<C, [C; N]>;
 }
 
 pub struct SplitPainter<
-	'a,
 	const STRIP_COUNT: usize,
 	const STRIP_W: usize,
 	const STRIP_H: usize,
 	const N: usize,
 	C: PixelColor,
 > {
-	pub buffer: &'a mut [C; N],
+	pub buffer: [C; N],
 }
 
 impl<
-	'a,
 	const STRIP_COUNT: usize,
 	const STRIP_W: usize,
 	const STRIP_H: usize,
 	const N: usize,
 	C: PixelColor,
-> SplitPainter<'a, STRIP_COUNT, STRIP_W, STRIP_H, N, C>
+> SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H, N, C>
 {
-	pub const fn new(buffer: &'a mut [C; N]) -> Self {
+	pub const fn new(buffer: [C; N]) -> Self {
 		Self { buffer }
 	}
 }
 
 impl<
-	'a,
 	const STRIP_COUNT: usize,
 	const STRIP_W: usize,
 	const STRIP_H: usize,
 	const N: usize,
 	C: PixelColor,
-> Painter<C, N> for SplitPainter<'a, STRIP_COUNT, STRIP_W, STRIP_H, N, C>
+> Painter<C, N> for SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H, N, C>
 {
-	async fn draw<
-		const WIDGET_COUNT: usize,
-		D: DrawTarget<Color = C>,
-		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
-	>(
+	fn draw<const WIDGET_COUNT: usize, D: DrawTarget<Color = C>>(
 		&mut self,
 		style: &Style<C>,
 		page: &mut Page<WIDGET_COUNT>,
-		mut finish: F,
+		target: &mut D,
 	) -> Result<(), D::Error> {
 		for strip in 0..STRIP_COUNT {
 			let y0 = strip * STRIP_H;
 
-			let mut buf = FrameBuf::new(*self.buffer, STRIP_W, STRIP_H);
+			let mut buf = FrameBuf::new(self.buffer, STRIP_W, STRIP_H);
 
 			buf.clear(style.screen_bg);
 
@@ -85,15 +74,13 @@ impl<
 				}
 			}
 
-			finish(&strip_rect, &mut buf).await?;
-
-			// target.fill_contiguous(&strip_rect, self.buffer)?;
+			target.fill_contiguous(&strip_rect, self.buffer)?;
 		}
 
 		Ok(())
 	}
 
 	fn data_mut(&mut self) -> FrameBuf<C, [C; N]> {
-		FrameBuf::new(*self.buffer, STRIP_W, STRIP_H)
+		FrameBuf::new(self.buffer, STRIP_W, STRIP_H)
 	}
 }
