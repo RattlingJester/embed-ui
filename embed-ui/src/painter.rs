@@ -22,7 +22,7 @@ pub struct SplitPainter<
 	const N: usize,
 	C: PixelColor,
 > {
-	framebuffer: [C; N],
+	buffer: [C; N],
 }
 
 impl<
@@ -33,8 +33,12 @@ impl<
 	C: PixelColor,
 > SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H, N, C>
 {
-	pub fn new(framebuffer: [C; N]) -> Self {
-		Self { framebuffer }
+	pub const fn new(buffer: [C; N]) -> Self {
+		Self { buffer }
+	}
+
+	pub fn data_mut(&mut self) -> FrameBuf<C, &mut [C; N]> {
+		FrameBuf::new(&mut self.buffer, STRIP_W, STRIP_H)
 	}
 }
 
@@ -55,7 +59,7 @@ impl<
 		for strip in 0..STRIP_COUNT {
 			let y0 = strip * STRIP_H;
 
-			let mut buf = FrameBuf::new(&mut self.framebuffer, STRIP_W, STRIP_H);
+			let mut buf = FrameBuf::new(&mut self.buffer, STRIP_W, STRIP_H);
 
 			buf.clear(style.screen_bg);
 
@@ -72,7 +76,7 @@ impl<
 				}
 			}
 
-			target.fill_contiguous(&strip_rect, self.framebuffer)?;
+			target.fill_contiguous(&strip_rect, self.buffer)?;
 		}
 
 		Ok(())
