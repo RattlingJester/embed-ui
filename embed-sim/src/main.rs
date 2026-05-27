@@ -154,7 +154,13 @@ fn main() {
 			b.set_text(&text).unwrap();
 		}
 
-		ui.draw(interaction.take(), &mut display);
+		ui.begin_frame(interaction.take());
+
+		for strip in 0..STRIP_COUNT {
+			ui.paint_strip(strip, &mut display).unwrap();
+		}
+
+		ui.end_frame();
 
 		i += 1;
 	}

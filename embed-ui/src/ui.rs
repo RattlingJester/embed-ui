@@ -176,21 +176,46 @@ impl<
 		&mut self.pages[idx as usize]
 	}
 
-	pub fn draw<D: DrawTarget<Color = C>>(
+	pub fn begin_frame(&mut self, interaction: Option<Interaction>) {
+		let page = &mut self.pages[self.active_page_idx as usize];
+
+		page.process(interaction, &mut self.events, self.active_page_idx);
+	}
+
+	pub fn paint_strip<D: DrawTarget<Color = C>>(
 		&mut self,
-		interaction: Option<Interaction>,
+		strip_count: usize,
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let page = &mut self.pages[self.active_page_idx as usize];
 
-		page.process(interaction, &mut self.events, self.active_page_idx);
-
-		self.painter.draw(&self.style, page, target)?;
-
-		for (w, _rect) in page.iter_mut() {
-			w.mark_clean();
-		}
+		self.painter.paint(strip_count, &self.style, page, target)?;
 
 		Ok(())
 	}
+
+	pub fn end_frame(&mut self) {
+		let page = &mut self.pages[self.active_page_idx as usize];
+		for (w, _rect) in page.iter_mut() {
+			w.mark_clean();
+		}
+	}
+
+	// pub fn draw<D: DrawTarget<Color = C>>(
+	// 	&mut self,
+	// 	interaction: Option<Interaction>,
+	// 	target: &mut D,
+	// ) -> Result<(), D::Error> {
+	// 	let page = &mut self.pages[self.active_page_idx as usize];
+
+	// 	page.process(interaction, &mut self.events, self.active_page_idx);
+
+	// 	self.painter.draw_full(&self.style, page, target)?;
+
+	// 	for (w, _rect) in page.iter_mut() {
+	// 		w.mark_clean();
+	// 	}
+
+	// 	Ok(())
+	// }
 }
