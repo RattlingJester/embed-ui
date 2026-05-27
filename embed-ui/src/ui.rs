@@ -1,7 +1,8 @@
-use embedded_graphics::prelude::{DrawTarget, PixelColor};
+use embedded_graphics::{prelude::PixelColor, primitives::Rectangle};
 use heapless::spsc::Queue;
 
 use crate::{
+	Error,
 	container::{Page, WidgetId},
 	input::{Event, Interaction},
 	painter::Painter,
@@ -171,16 +172,16 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 		page.process(interaction, &mut self.events, self.active_page_idx);
 	}
 
-	pub fn paint_strip<D: DrawTarget<Color = C>>(
+	pub fn paint_strip<const N: usize>(
 		&mut self,
 		strip_count: usize,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		buffer: &mut [C; N],
+	) -> Result<Rectangle, Error> {
 		let page = &mut self.pages[self.active_page_idx as usize];
 
-		self.painter.paint(strip_count, &self.style, page, target)?;
+		let rect = self.painter.paint(strip_count, &self.style, buffer, page)?;
 
-		Ok(())
+		Ok(rect)
 	}
 
 	pub fn end_frame(&mut self) {
