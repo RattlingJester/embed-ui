@@ -180,9 +180,9 @@ impl<
 		&mut self.pages[idx as usize]
 	}
 
-	pub fn draw<
+	pub async fn draw<
 		D: DrawTarget<Color = C>,
-		F: FnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
+		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
 	>(
 		&mut self,
 		interaction: Option<Interaction>,
@@ -193,7 +193,8 @@ impl<
 		page.process(interaction, &mut self.events, self.active_page_idx);
 
 		self.painter
-			.draw::<WIDGET_COUNT, D, F>(&self.style, page, finish)?;
+			.draw::<WIDGET_COUNT, D, F>(&self.style, page, finish)
+			.await?;
 
 		for (w, _rect) in page.iter_mut() {
 			w.mark_clean();
