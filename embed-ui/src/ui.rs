@@ -17,7 +17,7 @@ use crate::{
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>> {
 	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
 	events:          Queue<Event, WIDGET_COUNT>,
-	painter:         P,
+	pub painter:     P,
 	active_page_idx: u8,
 	dirty_frame:     bool,
 	pub style:       Style<C>,
