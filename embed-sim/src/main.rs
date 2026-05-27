@@ -23,6 +23,7 @@ const SCREEN_PIXELS_COUNT: usize = SCREEN_W * SCREEN_H;
 
 const STRIP_COUNT: usize = 10;
 const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
+const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -47,8 +48,12 @@ fn main() {
 	window.update(&display);
 	display.clear(embed_ui::style::DEFAULT_STYLE_666.screen_bg);
 
-	let painter: SplitPainter<10, SCREEN_W, STRIP_H, SCREEN_PIXELS_COUNT, Rgb666> =
-		SplitPainter::new([Rgb666::new(0, 0, 0); SCREEN_PIXELS_COUNT]);
+	println!(
+		"Screen pixels count: {SCREEN_PIXELS_COUNT}, strip count: {STRIP_COUNT}, strip height: {STRIP_H}"
+	);
+
+	let painter: SplitPainter<10, SCREEN_W, STRIP_H, STRIP_PIXEL_COUNT, Rgb666> =
+		SplitPainter::new([Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT]);
 
 	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 

@@ -1,4 +1,7 @@
-use embedded_graphics::prelude::{DrawTarget, DrawTargetExt, PixelColor, Point};
+use embedded_graphics::{
+	prelude::{DrawTarget, DrawTargetExt, PixelColor, Point, Size},
+	primitives::Rectangle,
+};
 use embedded_graphics_framebuf::FrameBuf;
 
 use crate::{container::Page, style::Style, widgets::Widget};
@@ -56,11 +59,20 @@ impl<
 
 			buf.clear(style.screen_bg);
 
-			let mut translated = target.translated(Point::new(0, -(y0 as i32)));
+			let strip_rect = Rectangle::new(
+				Point::new(0, y0 as i32),
+				Size::new(STRIP_W as u32, STRIP_H as u32),
+			);
+
+			let mut translated = buf.translated(Point::new(0, -strip_rect.top_left.y));
 
 			for (widget, rect) in page.widgets[..page.count].iter_mut().flatten() {
-				widget.draw(style, rect, &mut translated)?;
+				if !rect.intersection(&strip_rect).is_zero_sized() {
+					widget.draw(style, rect, &mut translated);
+				}
 			}
+
+			target.fill_contiguous(&strip_rect, self.framebuffer)?;
 		}
 
 		Ok(())
