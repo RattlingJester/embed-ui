@@ -7,7 +7,7 @@ use embedded_graphics_framebuf::FrameBuf;
 use crate::{container::Page, style::Style, widgets::Widget};
 
 pub trait Painter<C: PixelColor, const N: usize> {
-	async fn draw<
+	fn draw<
 		const WIDGET_COUNT: usize,
 		D: DrawTarget<Color = C>,
 		F: AsyncFnMut(&Rectangle, &mut FrameBuf<C, [C; N]>) -> Result<(), D::Error>,
@@ -16,7 +16,7 @@ pub trait Painter<C: PixelColor, const N: usize> {
 		style: &Style<C>,
 		page: &mut Page<WIDGET_COUNT>,
 		finish: F,
-	) -> Result<(), D::Error>;
+	) -> impl Future<Output = Result<(), D::Error>>;
 
 	fn data_mut(&mut self) -> FrameBuf<C, [C; N]>;
 }
