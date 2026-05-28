@@ -33,6 +33,26 @@ impl<const S: usize> Page<S> {
 		}
 	}
 
+	/// Returns a bitmask of strips that contain at least one dirty widget.
+	/// Bit N is set if strip N needs repainting.
+	/// Pass STRIP_COUNT as a const generic to cap the bit width.
+	pub fn dirty_strip_mask(&self, strip_h: usize, strip_count: usize) -> u32 {
+		let mut mask = 0u32;
+		for entry in self.widgets[..self.count].iter().flatten() {
+			let (widget, rect) = entry;
+			if widget.is_dirty() {
+				let y0 = rect.top_left.y.max(0) as usize;
+				let y1 = (y0 + rect.size.height as usize).saturating_sub(1);
+				let first = y0 / strip_h;
+				let last = (y1 / strip_h).min(strip_count - 1);
+				for s in first..=last {
+					mask |= 1 << s;
+				}
+			}
+		}
+		mask
+	}
+
 	pub fn process<const N: usize>(
 		&mut self,
 		interaction: Option<Interaction>,
