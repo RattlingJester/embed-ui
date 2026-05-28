@@ -33,7 +33,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 			events: Queue::new(),
 			painter,
 			active_page_idx: 0,
-			dirty_frame: false,
+			dirty_frame: true,
 			style,
 		}
 	}
