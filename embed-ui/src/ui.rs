@@ -16,12 +16,12 @@ use crate::{
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Ui<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>> {
-	pages:           [Page<WIDGET_COUNT>; PAGE_COUNT],
-	events:          Queue<Event, WIDGET_COUNT>,
-	pub painter:     P,
-	active_page_idx: u8,
-	dirty_frame:     bool,
-	pub style:       Style<C>,
+	pages:               [Page<WIDGET_COUNT>; PAGE_COUNT],
+	events:              Queue<Event, WIDGET_COUNT>,
+	pub painter:         P,
+	pub active_page_idx: u8,
+	pub dirty_frame:     bool,
+	pub style:           Style<C>,
 }
 
 impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Painter<C>>
