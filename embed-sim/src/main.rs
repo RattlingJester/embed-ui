@@ -5,7 +5,7 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
-	DrawTarget, Rgb666, RgbColor,
+	DrawTarget, Rgb666,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	input::{Event, Interaction},
 	painter::SplitPainter,
