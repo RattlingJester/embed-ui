@@ -4,6 +4,8 @@ use embedded_graphics::{
 	prelude::PixelColor,
 };
 
+use crate::colors::Rgb666_Packed;
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Style<C: PixelColor> {
@@ -56,6 +58,18 @@ pub const DEFAULT_STYLE_666: Style<Rgb666> = Style {
 	border_color: Rgb666::new(0, 42, 49),  // #00A8C0
 	text_color:   Rgb666::new(55, 60, 61), // #D8F0F4
 	focus_color:  Rgb666::new(63, 0, 0),   // #FF0000
+	border_width: 1,
+	font:         &FONT_6X12,
+};
+
+pub const DEFAULT_STYLE_666_PACKED: Style<Rgb666_Packed> = Style {
+	screen_bg:    Rgb666_Packed::new(2, 3, 4),    // #080E14
+	bg_color:     Rgb666_Packed::new(4, 7, 10),   // #101C28
+	active_color: Rgb666_Packed::new(0, 30, 45),  // #0079b5
+	hover_color:  Rgb666_Packed::new(0, 20, 24),  // #005163
+	border_color: Rgb666_Packed::new(0, 42, 49),  // #00A8C0
+	text_color:   Rgb666_Packed::new(55, 60, 61), // #D8F0F4
+	focus_color:  Rgb666_Packed::new(63, 0, 0),   // #FF0000
 	border_width: 1,
 	font:         &FONT_6X12,
 };

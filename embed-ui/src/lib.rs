@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod colors;
 pub mod container;
 pub mod input;
 pub mod painter;
