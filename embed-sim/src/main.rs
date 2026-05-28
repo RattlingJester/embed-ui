@@ -5,7 +5,7 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
-	DrawTarget, Rgb666,
+	DrawTarget, Rgb666, RgbColor,
 	container::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	input::{Event, Interaction},
 	painter::SplitPainter,
@@ -52,7 +52,7 @@ fn main() {
 		"Screen pixels count: {SCREEN_PIXELS_COUNT}, strip count: {STRIP_COUNT}, strip height: {STRIP_H}"
 	);
 
-	let mut buf = [Rgb666::new(0, 0, 0); STRIP_PIXEL_COUNT];
+	let mut buf = [0; STRIP_PIXEL_COUNT * 3];
 
 	let painter: SplitPainter<10, SCREEN_W, STRIP_H, _> = SplitPainter::new();
 
@@ -157,9 +157,11 @@ fn main() {
 
 		ui.begin_frame(interaction.take());
 
+		let pixel_slice = unsafe { &mut *(buf.as_mut_ptr() as *mut [Rgb666; STRIP_PIXEL_COUNT]) };
+
 		for strip in 0..STRIP_COUNT {
-			let rect = ui.paint_strip(strip, &mut buf).unwrap();
-			display.fill_contiguous(&rect, buf).unwrap();
+			let rect = ui.paint_strip(strip, pixel_slice).unwrap();
+			display.fill_contiguous(&rect, *pixel_slice).unwrap();
 		}
 
 		ui.end_frame();
