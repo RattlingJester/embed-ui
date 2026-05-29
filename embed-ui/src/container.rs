@@ -70,8 +70,6 @@ impl<const S: usize> Page<S> {
 				widget.interact(rect, interaction);
 			}
 
-			// widget.interact(rect, interaction);
-
 			match widget {
 				WidgetKind::Button(b) if b.is_clicked() => unsafe {
 					events.enqueue_unchecked(Event::ButtonClicked {
