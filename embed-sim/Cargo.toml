@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 embed-ui = { path = "../embed-ui" }
+profont = "0.7.0"
 
 embedded-graphics = "0.8.2"
 embedded-graphics-simulator = { version = "0.8.0" }

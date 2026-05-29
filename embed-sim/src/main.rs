@@ -16,6 +16,7 @@ use embed_ui::{
 		separator::Separator, textbox::Textbox,
 	},
 };
+use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
 
 const SCREEN_W: usize = 320;
 const SCREEN_H: usize = 480;
@@ -24,6 +25,11 @@ const SCREEN_PIXELS_COUNT: usize = SCREEN_W * SCREEN_H;
 const STRIP_COUNT: usize = 10;
 const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
 const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
+
+struct Elements<const B: usize, const T: usize> {
+	buttons:         [WidgetId; B],
+	joint_textboxes: [WidgetId; T],
+}
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -37,7 +43,7 @@ struct WidgetIDs<const WIDGET_COUNT: usize> {
 }
 
 fn main() {
-	let (page_main, elements_main) = main_page().unwrap();
+	let (page_main, elements_main) = main_page::<50>().unwrap();
 	let (page_settings, _elements_sett) = settings_page().unwrap();
 
 	let mut display = SimulatorDisplay::<Rgb666>::new(Size::new(320, 480));
@@ -59,8 +65,6 @@ fn main() {
 	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 
 	let mut interaction = None;
-
-	let mut i = 0;
 
 	'run: loop {
 		window.update(&display);
@@ -150,11 +154,6 @@ fn main() {
 			}
 		}
 
-		if let Some(b) = ui.get_button_mut(Pages::Main as u8, elements_main.ids[0]) {
-			let text: heapless::String<MAX_TEXT_LEN> = heapless::format!("ZALUPA {}", i).unwrap();
-			b.set_text(&text).unwrap();
-		}
-
 		ui.begin_frame(interaction.take());
 
 		let pixel_slice = unsafe { &mut *(buf.as_mut_ptr() as *mut [Rgb666; STRIP_PIXEL_COUNT]) };
@@ -165,37 +164,50 @@ fn main() {
 		}
 
 		ui.end_frame();
-
-		i += 1;
 	}
 }
 
-fn main_page() -> Result<(Page<10>, WidgetIDs<3>), embed_ui::Error> {
+fn main_page<const W: usize>() -> Result<(Page<W>, Elements<3, 6>), embed_ui::Error> {
 	let mut page = Page::new(
-		Size::new(320, 480),
+		Size::new(SCREEN_W as u32, SCREEN_H as u32),
 		true,
 		Align {
-			horizontal: HorizontalAlign::Center { columns: 2 },
-			vertical:   VerticalAlign::Center { rows: 2 },
+			horizontal: HorizontalAlign::Left,
+			vertical:   VerticalAlign::Top,
 		},
 	);
 
-	let button = Button::new("HUI", &embed_ui::ascii::FONT_10X20, Size::new(100, 50))?;
-	let checkbox = Checkbox::new(Size::new(50, 50));
-	let label = Label::new("ZALUPA", &embed_ui::ascii::FONT_10X20, Size::new(50, 50))?;
+	let left_button = Button::new("<", &PROFONT_24_POINT, Size::new(50, 50))?;
+	let menu_button = Button::new("Joint jog", &PROFONT_24_POINT, Size::new(220, 50))?;
+	let right_button = Button::new(">", &PROFONT_24_POINT, Size::new(50, 50))?;
 
-	let id1 = page.insert(WidgetKind::Button(button))?;
-	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
-	let id3 = page.insert(WidgetKind::Label(label))?;
+	let left_button_id = page.insert(WidgetKind::Button(left_button))?;
+	let menu_id = page.insert(WidgetKind::Button(menu_button))?;
+	let right_button_id = page.insert(WidgetKind::Button(right_button))?;
 
-	let elements = WidgetIDs {
-		ids: [id1, id2, id3],
+	let mut joint_textboxes = [0; 6];
+	for row in 0..6 {
+		let text: heapless::String<10> = heapless::format!("J{}", row).unwrap_or_default();
+		let label = Label::new(&text, &PROFONT_18_POINT, Size::new(50, 50))?;
+		let textbox = Textbox::new("", &PROFONT_24_POINT, Size::new(200, 50))?;
+		let button = Button::new("<0>", &PROFONT_18_POINT, Size::new(50, 50))?;
+
+		let _ = page.insert(WidgetKind::Label(label))?;
+		let textbox_id = page.insert(WidgetKind::Textbox(textbox))?;
+		let button = page.insert(WidgetKind::Button(button))?;
+
+		joint_textboxes[row] = textbox_id;
+	}
+
+	let e = Elements {
+		buttons: [left_button_id, menu_id, right_button_id],
+		joint_textboxes,
 	};
 
-	Ok((page, elements))
+	Ok((page, e))
 }
 
-fn settings_page() -> Result<(Page<10>, WidgetIDs<5>), embed_ui::Error> {
+fn settings_page<const W: usize>() -> Result<(Page<W>, WidgetIDs<5>), embed_ui::Error> {
 	let mut page = Page::new(
 		Size::new(320, 480),
 		true,
