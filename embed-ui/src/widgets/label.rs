@@ -4,7 +4,7 @@ use embedded_graphics::{
 	mono_font::{MonoFont, MonoTextStyle},
 	prelude::{DrawTarget, *},
 	primitives::Rectangle,
-	text::Text,
+	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 
 use heapless::String;
@@ -52,8 +52,17 @@ impl Widget for Label {
 		target: &mut D,
 	) -> Result<(), D::Error> {
 		let char_style = MonoTextStyle::new(self.font, style.text_color);
-		Text::new(&self.text, rect.center(), char_style).draw(target)?;
+		let text_style = TextStyleBuilder::new()
+			.baseline(Baseline::Middle)
+			.alignment(Alignment::Center)
+			.build();
 
+		let center_point = Point::new(
+			rect.top_left.x + (rect.size.width / 2) as i32,
+			rect.top_left.y + (rect.size.height / 2) as i32,
+		);
+
+		Text::with_text_style(&self.text, center_point, char_style, text_style).draw(target)?;
 		Ok(())
 	}
 
