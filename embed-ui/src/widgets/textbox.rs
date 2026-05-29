@@ -2,7 +2,7 @@ use core::str::FromStr;
 
 use embedded_graphics::{
 	Drawable,
-	mono_font::MonoTextStyle,
+	mono_font::{MonoFont, MonoTextStyle},
 	prelude::{DrawTarget, Point, Size},
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
@@ -21,14 +21,16 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Textbox {
 	text:    String<MAX_TEXT_LEN>,
+	font:    &'static MonoFont<'static>,
 	size:    Size,
 	changed: bool,
 }
 
 impl Textbox {
-	pub fn new(text: &str, size: Size) -> Result<Self, Error> {
+	pub fn new(text: &str, font: &'static MonoFont, size: Size) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
+			font,
 			size,
 			changed: true,
 		})
@@ -73,7 +75,7 @@ impl Widget for Textbox {
 		Text::with_text_style(
 			&self.text,
 			text_pos,
-			MonoTextStyle::new(style.font, style.text_color),
+			MonoTextStyle::new(self.font, style.text_color),
 			ts,
 		)
 		.draw(target)?;

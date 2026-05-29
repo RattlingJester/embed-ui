@@ -1,7 +1,10 @@
 use core::str::FromStr;
 
 use embedded_graphics::{
-	mono_font::MonoTextStyle, prelude::DrawTarget, prelude::*, primitives::Rectangle, text::Text,
+	mono_font::{MonoFont, MonoTextStyle},
+	prelude::{DrawTarget, *},
+	primitives::Rectangle,
+	text::Text,
 };
 
 use heapless::String;
@@ -17,14 +20,16 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Label {
 	text:    String<MAX_TEXT_LEN>,
+	font:    &'static MonoFont<'static>,
 	size:    Size,
 	changed: bool,
 }
 
 impl Label {
-	pub fn new(text: &str, size: Size) -> Result<Self, Error> {
+	pub fn new(text: &str, font: &'static MonoFont, size: Size) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
+			font,
 			size,
 			changed: true,
 		})
@@ -46,7 +51,7 @@ impl Widget for Label {
 		rect: &Rectangle,
 		target: &mut D,
 	) -> Result<(), D::Error> {
-		let char_style = MonoTextStyle::new(style.font, style.text_color);
+		let char_style = MonoTextStyle::new(self.font, style.text_color);
 		Text::new(&self.text, rect.center(), char_style).draw(target)?;
 
 		Ok(())

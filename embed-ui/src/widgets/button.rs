@@ -1,7 +1,7 @@
 use core::str::FromStr;
 
 use embedded_graphics::{
-	mono_font::MonoTextStyle,
+	mono_font::{MonoFont, MonoTextStyle},
 	prelude::*,
 	primitives::{PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
@@ -19,6 +19,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Button {
 	text:    String<MAX_TEXT_LEN>,
+	font:    &'static MonoFont<'static>,
 	size:    Size,
 	focus:   bool,
 	changed: bool,
@@ -26,9 +27,10 @@ pub struct Button {
 }
 
 impl Button {
-	pub fn new(text: &str, size: Size) -> Result<Self, Error> {
+	pub fn new(text: &str, font: &'static MonoFont<'static>, size: Size) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
+			font,
 			size,
 			focus: false,
 			changed: true,
@@ -88,7 +90,7 @@ impl Widget for Button {
 		Text::with_text_style(
 			&self.text,
 			text_location,
-			MonoTextStyle::new(style.font, style.text_color),
+			MonoTextStyle::new(self.font, style.text_color),
 			ts,
 		)
 		.draw(target)?;

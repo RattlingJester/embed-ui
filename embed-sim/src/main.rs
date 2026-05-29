@@ -180,9 +180,9 @@ fn main_page() -> Result<(Page<10>, WidgetIDs<3>), embed_ui::Error> {
 		},
 	);
 
-	let button = Button::new("HUI", Size::new(100, 50))?;
+	let button = Button::new("HUI", &embed_ui::ascii::FONT_10X20, Size::new(100, 50))?;
 	let checkbox = Checkbox::new(Size::new(50, 50));
-	let label = Label::new("ZALUPA", Size::new(50, 50))?;
+	let label = Label::new("ZALUPA", &embed_ui::ascii::FONT_10X20, Size::new(50, 50))?;
 
 	let id1 = page.insert(WidgetKind::Button(button))?;
 	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
@@ -205,11 +205,11 @@ fn settings_page() -> Result<(Page<10>, WidgetIDs<5>), embed_ui::Error> {
 		},
 	);
 
-	let button = Button::new("SADAW", Size::new(100, 50))?;
+	let button = Button::new("SADAW", &embed_ui::ascii::FONT_10X20, Size::new(100, 50))?;
 	let checkbox = Checkbox::new(Size::new(50, 50));
-	let label = Label::new("KJASD", Size::new(50, 50))?;
+	let label = Label::new("KJASD", &embed_ui::ascii::FONT_10X20, Size::new(50, 50))?;
 	let separator = Separator::new(Size::new(320, 6));
-	let textbox = Textbox::new("ADAW", Size::new(320, 100))?;
+	let textbox = Textbox::new("ADAW", &embed_ui::ascii::FONT_10X20, Size::new(320, 100))?;
 
 	let id1 = page.insert(WidgetKind::Button(button))?;
 	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
