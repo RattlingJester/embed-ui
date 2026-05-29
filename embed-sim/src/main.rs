@@ -12,8 +12,8 @@ use embed_ui::{
 	style::DEFAULT_STYLE_666,
 	ui::Ui,
 	widgets::{
-		MAX_TEXT_LEN, WidgetKind, button::Button, checkbox::Checkbox, label::Label,
-		separator::Separator, textbox::Textbox,
+		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
+		textbox::Textbox,
 	},
 };
 use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
@@ -137,7 +137,7 @@ fn main() {
 			}
 		}
 
-		if let Some(event) = ui.drain_events() {
+		while let Some(event) = ui.drain_events() {
 			match event {
 				Event::ButtonClicked {
 					page_idx,
