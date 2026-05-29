@@ -51,6 +51,10 @@ impl Widget for Separator {
 
 	fn set_focus(&mut self, _focus: bool) {}
 
+	fn is_pressed(&self) -> bool {
+		false
+	}
+
 	fn is_dirty(&self) -> bool {
 		self.changed
 	}

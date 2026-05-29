@@ -134,6 +134,10 @@ impl Widget for Button {
 		self.size
 	}
 
+	fn is_pressed(&self) -> bool {
+		self.pressed
+	}
+
 	fn is_focusable(&self) -> bool {
 		true
 	}

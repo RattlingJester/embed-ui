@@ -22,7 +22,7 @@ pub mod textbox;
 pub const MAX_TEXT_LEN: usize = 64;
 
 #[enum_dispatch]
-pub trait Widget {
+pub(crate) trait Widget {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
@@ -37,6 +37,7 @@ pub trait Widget {
 	fn size(&self) -> Size;
 	fn is_focusable(&self) -> bool;
 	fn is_dirty(&self) -> bool;
+	fn is_pressed(&self) -> bool;
 }
 
 #[enum_dispatch(Widget)]

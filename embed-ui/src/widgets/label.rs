@@ -78,6 +78,10 @@ impl Widget for Label {
 		self.size
 	}
 
+	fn is_pressed(&self) -> bool {
+		false
+	}
+
 	fn is_focusable(&self) -> bool {
 		false
 	}

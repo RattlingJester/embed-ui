@@ -10,6 +10,16 @@ pub enum Interaction {
 	Drag(Point),
 }
 
+impl Interaction {
+	pub fn point(&self) -> Point {
+		match self {
+			Self::Click(p) => *p,
+			Self::Release(p) => *p,
+			Self::Drag(p) => *p,
+		}
+	}
+}
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub enum Event {

@@ -62,7 +62,15 @@ impl<const S: usize> Page<S> {
 		for (widget_id, (widget, rect)) in
 			self.widgets[..self.count].iter_mut().flatten().enumerate()
 		{
-			widget.interact(rect, interaction);
+			let is_hit = interaction
+				.map(|i| rect.contains(i.point()))
+				.unwrap_or(false);
+
+			if is_hit || widget.is_pressed() {
+				widget.interact(rect, interaction);
+			}
+
+			// widget.interact(rect, interaction);
 
 			match widget {
 				WidgetKind::Button(b) if b.is_clicked() => unsafe {

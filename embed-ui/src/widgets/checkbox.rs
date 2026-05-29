@@ -110,6 +110,10 @@ impl Widget for Checkbox {
 		}
 	}
 
+	fn is_pressed(&self) -> bool {
+		self.checked
+	}
+
 	fn is_focusable(&self) -> bool {
 		true
 	}
