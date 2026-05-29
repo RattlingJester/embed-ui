@@ -33,6 +33,14 @@ impl Textbox {
 			changed: true,
 		})
 	}
+
+	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
 }
 
 impl Widget for Textbox {

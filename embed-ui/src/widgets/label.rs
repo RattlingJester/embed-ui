@@ -31,7 +31,8 @@ impl Label {
 	}
 
 	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text = String::from_str(text)?;
+		self.text.clear();
+		self.text.push_str(text)?;
 		self.changed = true;
 
 		Ok(())
