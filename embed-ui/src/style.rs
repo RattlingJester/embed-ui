@@ -1,5 +1,4 @@
 use embedded_graphics::{
-	mono_font::{MonoFont, ascii::FONT_6X12},
 	pixelcolor::{Rgb565, Rgb666},
 	prelude::PixelColor,
 };
@@ -32,10 +31,6 @@ pub struct Style<C: PixelColor> {
 
 	/// Stroke width in pixels for widget outlines.
 	pub border_width: u32,
-
-	/// Font used for all widget labels.
-	/// Any of the `embedded_graphics::mono_font::ascii::FONT_*` constants work.
-	pub font: &'static MonoFont<'static>,
 }
 
 pub const DEFAULT_STYLE_565: Style<Rgb565> = Style {
@@ -47,7 +42,6 @@ pub const DEFAULT_STYLE_565: Style<Rgb565> = Style {
 	text_color:   Rgb565::new(27, 60, 30), // #D8F0F4
 	focus_color:  Rgb565::new(255, 0, 0),  // #FF0000
 	border_width: 1,
-	font:         &FONT_6X12,
 };
 
 pub const DEFAULT_STYLE_666: Style<Rgb666> = Style {
@@ -59,7 +53,6 @@ pub const DEFAULT_STYLE_666: Style<Rgb666> = Style {
 	text_color:   Rgb666::new(55, 60, 61), // #D8F0F4
 	focus_color:  Rgb666::new(63, 0, 0),   // #FF0000
 	border_width: 1,
-	font:         &FONT_6X12,
 };
 
 pub const DEFAULT_STYLE_666_PACKED: Style<Rgb666_Packed> = Style {
@@ -71,5 +64,4 @@ pub const DEFAULT_STYLE_666_PACKED: Style<Rgb666_Packed> = Style {
 	text_color:   Rgb666_Packed::new(55, 60, 61), // #D8F0F4
 	focus_color:  Rgb666_Packed::new(63, 0, 0),   // #FF0000
 	border_width: 1,
-	font:         &FONT_6X12,
 };
