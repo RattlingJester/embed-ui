@@ -185,27 +185,12 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 	}
 
 	pub fn end_frame(&mut self) {
+		self.dirty_frame = false;
+
 		let page = &mut self.pages[self.active_page_idx as usize];
+
 		for (w, _rect) in page.iter_mut() {
 			w.mark_clean();
 		}
 	}
-
-	// pub fn draw<D: DrawTarget<Color = C>>(
-	// 	&mut self,
-	// 	interaction: Option<Interaction>,
-	// 	target: &mut D,
-	// ) -> Result<(), D::Error> {
-	// 	let page = &mut self.pages[self.active_page_idx as usize];
-
-	// 	page.process(interaction, &mut self.events, self.active_page_idx);
-
-	// 	self.painter.draw_full(&self.style, page, target)?;
-
-	// 	for (w, _rect) in page.iter_mut() {
-	// 		w.mark_clean();
-	// 	}
-
-	// 	Ok(())
-	// }
 }
