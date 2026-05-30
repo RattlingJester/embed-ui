@@ -24,5 +24,6 @@ impl Interaction {
 #[derive(Debug)]
 pub enum Event {
 	ButtonClicked { page_idx: u8, widget_id: WidgetId },
+	RadioButtonToggled { page_idx: u8, widget_id: WidgetId },
 	CheckboxToggled { page_idx: u8, widget_id: WidgetId },
 }

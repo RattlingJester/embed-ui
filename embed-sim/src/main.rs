@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use embedded_graphics::prelude::Size;
 use embedded_graphics_simulator::{
 	OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
@@ -12,8 +14,8 @@ use embed_ui::{
 	style::DEFAULT_STYLE_666,
 	ui::Ui,
 	widgets::{
-		WidgetKind, button::Button, checkbox::Checkbox, label::Label, separator::Separator,
-		textbox::Textbox,
+		WidgetKind, button::Button, checkbox::Checkbox, label::Label, radio_button::RadioButton,
+		separator::Separator, textbox::Textbox,
 	},
 };
 use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
@@ -26,16 +28,50 @@ const STRIP_COUNT: usize = 10;
 const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
 const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
 
+const JOINT_STEPS: [&str; 4] = ["0.01", "0.1", "1", "10"];
+const MODES: [&str; 2] = ["JOG", "CART"];
+
 struct Elements<const B: usize, const T: usize> {
 	buttons:         [WidgetId; B],
 	joint_textboxes: [WidgetId; T],
+	steps:           [WidgetId; 4],
+	status_id:       WidgetId,
+	mode_id:         WidgetId,
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum Pages {
-	Main     = 0,
-	Settings = 1,
+#[derive(Debug, Default)]
+struct UiState {
+	focused_joint: usize,
+	mode:          usize,
+	step:          f32,
+	positions:     [f32; 6],
+	status:        RobotState,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum RobotState {
+	#[default]
+	Init,
+	Idle,
+	Disconnected,
+	Moving {
+		cmd_id: u8,
+	},
+	MoveError,
+	EStop,
+}
+
+impl RobotState {
+	pub const fn as_str(self) -> &'static str {
+		match self {
+			Self::Init => "Init",
+			Self::Idle => "Idle",
+			Self::Disconnected => "Disconnected",
+			Self::Moving { cmd_id: _ } => "Moving",
+			Self::MoveError => "MoveError",
+			Self::EStop => "EStop",
+		}
+	}
 }
 
 struct WidgetIDs<const WIDGET_COUNT: usize> {
@@ -43,7 +79,14 @@ struct WidgetIDs<const WIDGET_COUNT: usize> {
 }
 
 fn main() {
-	let (page_main, elements_main) = main_page::<50>().unwrap();
+	let mut state = UiState {
+		focused_joint: 0,
+		mode: 0,
+		step: 0.01,
+		..Default::default()
+	};
+
+	let (page_main, mut elements_main) = main_page::<50>(&state).unwrap();
 	let (page_settings, _elements_sett) = settings_page().unwrap();
 
 	let mut display = SimulatorDisplay::<Rgb666>::new(Size::new(320, 480));
@@ -65,6 +108,11 @@ fn main() {
 	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
 
 	let mut interaction = None;
+
+	if let Some(WidgetKind::RadioButton(b)) = ui.current_page_mut().get_mut(elements_main.steps[0])
+	{
+		b.set_toggle(true);
+	}
 
 	'run: loop {
 		window.update(&display);
@@ -139,18 +187,25 @@ fn main() {
 
 		while let Some(event) = ui.drain_events() {
 			match event {
-				Event::ButtonClicked {
-					page_idx,
+				Event::RadioButtonToggled {
+					page_idx: 0,
 					widget_id,
-				} => {
-					println!("Button ID: {widget_id} clicked at page: {page_idx}");
+				} if widget_id != elements_main.mode_id => {
+					if let Some(WidgetKind::RadioButton(b)) =
+						ui.current_page_mut().get_mut(elements_main.mode_id)
+					{
+						b.set_toggle(false);
+					}
+
+					if let Some(WidgetKind::RadioButton(b)) =
+						ui.current_page_mut().get_mut(widget_id)
+					{
+						b.set_toggle(true);
+						elements_main.mode_id = widget_id;
+					}
 				}
-				Event::CheckboxToggled {
-					page_idx,
-					widget_id,
-				} => {
-					println!("Checkbox ID: {widget_id} checked at page: {page_idx}");
-				}
+
+				_ => (),
 			}
 		}
 
@@ -167,7 +222,9 @@ fn main() {
 	}
 }
 
-fn main_page<const W: usize>() -> Result<(Page<W>, Elements<3, 6>), embed_ui::Error> {
+fn main_page<const W: usize>(
+	state: &UiState,
+) -> Result<(Page<W>, Elements<3, 6>), embed_ui::Error> {
 	let mut page = Page::new(
 		Size::new(SCREEN_W as u32, SCREEN_H as u32),
 		true,
@@ -187,21 +244,48 @@ fn main_page<const W: usize>() -> Result<(Page<W>, Elements<3, 6>), embed_ui::Er
 
 	let mut joint_textboxes = [0; 6];
 	for row in 0..6 {
-		let text: heapless::String<10> = heapless::format!("J{}", row).unwrap_or_default();
-		let label = Label::new(&text, &PROFONT_18_POINT, Size::new(50, 50))?;
-		let textbox = Textbox::new("", &PROFONT_24_POINT, Size::new(200, 50))?;
+		let text: heapless::String<10> = heapless::format!("J{}", row + 1).unwrap_or_default();
+		let label = Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?;
+		let textbox = Textbox::new("", &PROFONT_24_POINT, Size::new(220, 50))?;
 		let button = Button::new("<0>", &PROFONT_18_POINT, Size::new(50, 50))?;
 
 		let _ = page.insert(WidgetKind::Label(label))?;
 		let textbox_id = page.insert(WidgetKind::Textbox(textbox))?;
-		let button = page.insert(WidgetKind::Button(button))?;
+		let _button = page.insert(WidgetKind::Button(button))?;
 
 		joint_textboxes[row] = textbox_id;
 	}
 
+	let mut steps = [0; 4];
+	for row in 0..4 {
+		let button = RadioButton::new(
+			JOINT_STEPS[row],
+			&PROFONT_24_POINT,
+			Size::new(80, 50),
+			false,
+		)?;
+		let id = page.insert(WidgetKind::RadioButton(button))?;
+		steps[row] = id;
+	}
+
+	let status = Textbox::new(state.status.as_str(), &PROFONT_18_POINT, Size::new(240, 30))?;
+	let status_id = page.insert(WidgetKind::Textbox(status))?;
+
+	let mode = Textbox::new(MODES[state.mode], &PROFONT_18_POINT, Size::new(80, 30))?;
+	let mode_id = page.insert(WidgetKind::Textbox(mode))?;
+
+	let run = Button::new("RUN", &PROFONT_18_POINT, Size::new(160, 50))?;
+	let reset = Button::new("RESET", &PROFONT_18_POINT, Size::new(160, 50))?;
+
+	let _run_id = page.insert(WidgetKind::Button(run))?;
+	let _reset_id = page.insert(WidgetKind::Button(reset))?;
+
 	let e = Elements {
 		buttons: [left_button_id, menu_id, right_button_id],
 		joint_textboxes,
+		steps,
+		status_id,
+		mode_id,
 	};
 
 	Ok((page, e))

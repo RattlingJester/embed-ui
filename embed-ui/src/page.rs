@@ -77,6 +77,12 @@ impl<const S: usize> Page<S> {
 						widget_id,
 					})
 				},
+				WidgetKind::RadioButton(b) if b.is_clicked() => unsafe {
+					events.enqueue_unchecked(Event::RadioButtonToggled {
+						page_idx,
+						widget_id,
+					})
+				},
 				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
 					events.enqueue_unchecked(Event::CheckboxToggled {
 						page_idx,
