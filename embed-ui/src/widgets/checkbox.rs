@@ -8,11 +8,12 @@ use crate::{input::Interaction, style::Style, widgets::Widget};
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Checkbox {
-	size:    Size,
-	focus:   bool,
-	checked: bool,
-	held:    bool,
-	changed: bool,
+	size:      Size,
+	focus:     bool,
+	focusable: bool,
+	checked:   bool,
+	held:      bool,
+	changed:   bool,
 }
 
 impl Checkbox {
@@ -20,6 +21,7 @@ impl Checkbox {
 		Self {
 			size,
 			focus: false,
+			focusable: true,
 			checked: false,
 			held: false,
 			changed: true,
@@ -103,8 +105,12 @@ impl Widget for Checkbox {
 		self.size
 	}
 
+	fn set_focusable(&mut self, focusable: bool) {
+		self.focusable = focusable;
+	}
+
 	fn set_focus(&mut self, focus: bool) {
-		if self.focus != focus {
+		if self.focus != focus && self.focusable {
 			self.changed = true;
 			self.focus = focus;
 		}

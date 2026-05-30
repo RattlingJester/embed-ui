@@ -12,7 +12,6 @@ use heapless::String;
 
 use crate::{
 	Error,
-	input::Interaction,
 	style::Style,
 	widgets::{MAX_TEXT_LEN, Widget},
 };
@@ -20,10 +19,12 @@ use crate::{
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Textbox {
-	text:    String<MAX_TEXT_LEN>,
-	font:    &'static MonoFont<'static>,
-	size:    Size,
-	changed: bool,
+	text:      String<MAX_TEXT_LEN>,
+	font:      &'static MonoFont<'static>,
+	size:      Size,
+	focus:     bool,
+	focusable: bool,
+	changed:   bool,
 }
 
 impl Textbox {
@@ -32,6 +33,8 @@ impl Textbox {
 			text: String::from_str(text)?,
 			font,
 			size,
+			focus: false,
+			focusable: true,
 			changed: true,
 		})
 	}
@@ -83,24 +86,23 @@ impl Widget for Textbox {
 		Ok(())
 	}
 
-	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
+	fn set_focus(&mut self, focus: bool) {
+		if self.focus != focus && self.focusable {
+			self.changed = true;
+			self.focus = focus;
+		}
+	}
+
+	fn set_focusable(&mut self, focusable: bool) {
+		self.focusable = focusable
+	}
 
 	fn mark_clean(&mut self) {
 		self.changed = false
 	}
 
-	fn set_focus(&mut self, _focus: bool) {}
-
 	fn size(&self) -> Size {
 		self.size
-	}
-
-	fn is_pressed(&self) -> bool {
-		false
-	}
-
-	fn is_focusable(&self) -> bool {
-		false
 	}
 
 	fn is_dirty(&self) -> bool {

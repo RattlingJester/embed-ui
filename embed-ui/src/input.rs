@@ -1,6 +1,6 @@
 use embedded_graphics::prelude::Point;
 
-use crate::container::WidgetId;
+use crate::page::WidgetId;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

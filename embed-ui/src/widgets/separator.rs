@@ -3,7 +3,7 @@ use embedded_graphics::{
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 };
 
-use crate::{input::Interaction, style::Style, widgets::Widget};
+use crate::{style::Style, widgets::Widget};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
@@ -39,8 +39,6 @@ impl Widget for Separator {
 		Ok(())
 	}
 
-	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
-
 	fn mark_clean(&mut self) {
 		self.changed = false
 	}
@@ -49,17 +47,7 @@ impl Widget for Separator {
 		self.size
 	}
 
-	fn set_focus(&mut self, _focus: bool) {}
-
-	fn is_pressed(&self) -> bool {
-		false
-	}
-
 	fn is_dirty(&self) -> bool {
 		self.changed
-	}
-
-	fn is_focusable(&self) -> bool {
-		false
 	}
 }

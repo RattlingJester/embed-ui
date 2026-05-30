@@ -3,8 +3,8 @@ use heapless::spsc::Queue;
 
 use crate::{
 	Error,
-	container::{Page, WidgetId},
 	input::{Event, Interaction},
+	page::{Page, WidgetId},
 	painter::Painter,
 	style::Style,
 	widgets::{

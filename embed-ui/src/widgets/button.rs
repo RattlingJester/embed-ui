@@ -18,12 +18,13 @@ use crate::{
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Button {
-	text:    String<MAX_TEXT_LEN>,
-	font:    &'static MonoFont<'static>,
-	size:    Size,
-	focus:   bool,
-	changed: bool,
-	pressed: bool,
+	text:      String<MAX_TEXT_LEN>,
+	font:      &'static MonoFont<'static>,
+	size:      Size,
+	focus:     bool,
+	focusable: bool,
+	changed:   bool,
+	pressed:   bool,
 }
 
 impl Button {
@@ -33,6 +34,7 @@ impl Button {
 			font,
 			size,
 			focus: false,
+			focusable: true,
 			changed: true,
 			pressed: false,
 		})
@@ -124,10 +126,14 @@ impl Widget for Button {
 	}
 
 	fn set_focus(&mut self, focus: bool) {
-		if self.focus != focus {
+		if self.focus != focus && self.focusable {
 			self.changed = true;
 			self.focus = focus;
 		}
+	}
+
+	fn set_focusable(&mut self, focusable: bool) {
+		self.focusable = focusable
 	}
 
 	fn size(&self) -> Size {

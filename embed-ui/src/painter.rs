@@ -6,7 +6,7 @@ use embedded_graphics::{
 };
 use embedded_graphics_framebuf::FrameBuf;
 
-use crate::{Error, container::Page, style::Style, widgets::Widget};
+use crate::{Error, page::Page, style::Style, widgets::Widget};
 
 pub trait Painter<C: PixelColor> {
 	fn paint<const WIDGET_COUNT: usize, const N: usize>(

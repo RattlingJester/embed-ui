@@ -9,17 +9,19 @@ use crate::{
 	input::Interaction,
 	style::Style,
 	widgets::{
-		button::Button, checkbox::Checkbox, label::Label, separator::Separator, textbox::Textbox,
+		button::Button, checkbox::Checkbox, label::Label, radio_button::RadioButton,
+		separator::Separator, textbox::Textbox,
 	},
 };
 
 pub mod button;
 pub mod checkbox;
 pub mod label;
+pub mod radio_button;
 pub mod separator;
 pub mod textbox;
 
-pub const MAX_TEXT_LEN: usize = 64;
+pub const MAX_TEXT_LEN: usize = 32;
 
 #[enum_dispatch]
 pub(crate) trait Widget {
@@ -30,14 +32,19 @@ pub(crate) trait Widget {
 		target: &mut D,
 	) -> Result<(), D::Error>;
 
-	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>);
-	fn set_focus(&mut self, focus: bool);
+	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
+	fn set_focus(&mut self, _focus: bool) {}
+	fn set_focusable(&mut self, _focusable: bool) {}
 	fn mark_clean(&mut self);
 
 	fn size(&self) -> Size;
-	fn is_focusable(&self) -> bool;
+	fn is_focusable(&self) -> bool {
+		false
+	}
 	fn is_dirty(&self) -> bool;
-	fn is_pressed(&self) -> bool;
+	fn is_pressed(&self) -> bool {
+		false
+	}
 }
 
 #[enum_dispatch(Widget)]
@@ -46,6 +53,7 @@ pub(crate) trait Widget {
 pub enum WidgetKind {
 	Label(Label),
 	Button(Button),
+	RadioButton(RadioButton),
 	Checkbox(Checkbox),
 	Separator(Separator),
 	Textbox(Textbox),

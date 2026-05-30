@@ -11,7 +11,6 @@ use heapless::String;
 
 use crate::{
 	Error,
-	input::Interaction,
 	style::Style,
 	widgets::{MAX_TEXT_LEN, Widget},
 };
@@ -66,24 +65,12 @@ impl Widget for Label {
 		Ok(())
 	}
 
-	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
-
-	fn set_focus(&mut self, _focus: bool) {}
-
 	fn mark_clean(&mut self) {
 		self.changed = false;
 	}
 
 	fn size(&self) -> Size {
 		self.size
-	}
-
-	fn is_pressed(&self) -> bool {
-		false
-	}
-
-	fn is_focusable(&self) -> bool {
-		false
 	}
 
 	fn is_dirty(&self) -> bool {
