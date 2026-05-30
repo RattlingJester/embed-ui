@@ -109,11 +109,6 @@ fn main() {
 
 	let mut interaction = None;
 
-	if let Some(WidgetKind::RadioButton(b)) = ui.current_page_mut().get_mut(elements_main.steps[0])
-	{
-		b.set_toggle(true);
-	}
-
 	'run: loop {
 		window.update(&display);
 
@@ -243,7 +238,7 @@ fn main_page<const W: usize>(
 	let right_button_id = page.insert(WidgetKind::Button(right_button))?;
 
 	let mut joint_textboxes = [0; 6];
-	for row in 0..6 {
+	for (row, item) in joint_textboxes.iter_mut().enumerate() {
 		let text: heapless::String<10> = heapless::format!("J{}", row + 1).unwrap_or_default();
 		let label = Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?;
 		let textbox = Textbox::new("", &PROFONT_24_POINT, Size::new(220, 50))?;
@@ -253,7 +248,7 @@ fn main_page<const W: usize>(
 		let textbox_id = page.insert(WidgetKind::Textbox(textbox))?;
 		let _button = page.insert(WidgetKind::Button(button))?;
 
-		joint_textboxes[row] = textbox_id;
+		*item = textbox_id;
 	}
 
 	let mut steps = [0; 4];
@@ -266,6 +261,10 @@ fn main_page<const W: usize>(
 		)?;
 		let id = page.insert(WidgetKind::RadioButton(button))?;
 		steps[row] = id;
+	}
+
+	if let Some(WidgetKind::RadioButton(b)) = page.get_mut(steps[0]) {
+		b.set_toggle(true);
 	}
 
 	let status = Textbox::new(state.status.as_str(), &PROFONT_18_POINT, Size::new(240, 30))?;
