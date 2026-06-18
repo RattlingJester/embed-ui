@@ -17,11 +17,11 @@ pub struct Checkbox {
 }
 
 impl Checkbox {
-	pub fn new(size: Size) -> Self {
+	pub fn new(size: Size, focusable: bool) -> Self {
 		Self {
 			size,
 			focus: false,
-			focusable: true,
+			focusable,
 			checked: false,
 			held: false,
 			changed: true,
@@ -121,7 +121,7 @@ impl Widget for Checkbox {
 	}
 
 	fn is_focusable(&self) -> bool {
-		true
+		self.focusable
 	}
 
 	fn is_dirty(&self) -> bool {

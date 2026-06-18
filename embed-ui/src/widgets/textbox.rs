@@ -28,13 +28,18 @@ pub struct Textbox {
 }
 
 impl Textbox {
-	pub fn new(text: &str, font: &'static MonoFont, size: Size) -> Result<Self, Error> {
+	pub fn new(
+		text: &str,
+		font: &'static MonoFont,
+		size: Size,
+		focusable: bool,
+	) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
 			font,
 			size,
 			focus: false,
-			focusable: true,
+			focusable,
 			changed: true,
 		})
 	}
@@ -104,6 +109,10 @@ impl Widget for Textbox {
 
 	fn mark_clean(&mut self) {
 		self.changed = false
+	}
+
+	fn is_focusable(&self) -> bool {
+		self.focusable
 	}
 
 	fn size(&self) -> Size {
