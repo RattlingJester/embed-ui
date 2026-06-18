@@ -154,52 +154,36 @@ impl<const S: usize> Page<S> {
 			return false;
 		}
 
-		if let Some(w) = self.get(new_idx)
+		if let Some((w, _)) = self.get(new_idx)
 			&& !w.is_focusable()
 		{
 			return false;
 		}
 
-		if let Some(w) = self.get_mut(self.focus_idx) {
+		if let Some((w, _)) = self.get_mut(self.focus_idx) {
 			w.set_focus(false);
 		}
 
 		self.focus_idx = new_idx;
-		if let Some(w) = self.get_mut(self.focus_idx) {
+		if let Some((w, _)) = self.get_mut(self.focus_idx) {
 			w.set_focus(true);
 		}
 
 		true
 	}
 
-	pub fn widget_interact(&mut self, widget_id: WidgetId, interaction: Interaction) -> bool {
-		if let Some((w, _)) = &mut self.widgets[widget_id] {
-			w.interact(Some(interaction));
-		}
-
-		false
-	}
-
-	pub fn get(&self, index: WidgetId) -> Option<&WidgetKind> {
-		if index >= self.count {
-			return None;
-		}
-
+	pub fn get(&self, index: WidgetId) -> Option<(&WidgetKind, &Rectangle)> {
 		self.widgets
 			.get(index)
 			.and_then(|opt| opt.as_ref())
-			.map(|(widget, _rect)| widget)
+			.map(|(widget, rect)| (widget, rect))
 	}
 
-	pub fn get_mut(&mut self, index: WidgetId) -> Option<&mut WidgetKind> {
-		if index >= self.count {
-			return None;
-		}
-
+	pub fn get_mut(&mut self, index: WidgetId) -> Option<(&mut WidgetKind, &mut Rectangle)> {
 		self.widgets
 			.get_mut(index)
 			.and_then(|opt| opt.as_mut())
-			.map(|(widget, _rect)| widget)
+			.map(|(widget, rect)| (widget, rect))
 	}
 
 	pub fn iter(&self) -> impl Iterator<Item = &(WidgetKind, Rectangle)> {

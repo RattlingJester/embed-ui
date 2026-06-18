@@ -78,81 +78,101 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 		&mut self.pages[self.active_page_idx as usize]
 	}
 
-	pub fn get_button(&self, page_idx: u8, id: WidgetId) -> Option<&Button> {
-		if let Some(WidgetKind::Button(b)) = self.get_page(page_idx).get(id) {
-			Some(b)
+	pub fn get_button(&self, page_idx: u8, id: WidgetId) -> Option<(&Button, &Rectangle)> {
+		if let (WidgetKind::Button(b), rect) = self.get_page(page_idx).get(id)? {
+			Some((b, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_button_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Button> {
-		if let Some(WidgetKind::Button(b)) = self.get_page_mut(page_idx).get_mut(id) {
-			Some(b)
+	pub fn get_button_mut(
+		&mut self,
+		page_idx: u8,
+		id: WidgetId,
+	) -> Option<(&mut Button, &mut Rectangle)> {
+		if let (WidgetKind::Button(b), rect) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some((b, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_label(&self, page_idx: u8, id: WidgetId) -> Option<&Label> {
-		if let WidgetKind::Label(l) = self.get_page(page_idx).get(id)? {
-			Some(l)
+	pub fn get_label(&self, page_idx: u8, id: WidgetId) -> Option<(&Label, &Rectangle)> {
+		if let (WidgetKind::Label(l), rect) = self.get_page(page_idx).get(id)? {
+			Some((l, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_label_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Label> {
-		if let WidgetKind::Label(l) = self.get_page_mut(page_idx).get_mut(id)? {
-			Some(l)
+	pub fn get_label_mut(
+		&mut self,
+		page_idx: u8,
+		id: WidgetId,
+	) -> Option<(&mut Label, &mut Rectangle)> {
+		if let (WidgetKind::Label(l), rect) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some((l, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_checkbox(&self, page_idx: u8, id: WidgetId) -> Option<&Checkbox> {
-		if let WidgetKind::Checkbox(c) = self.get_page(page_idx).get(id)? {
-			Some(c)
+	pub fn get_checkbox(&self, page_idx: u8, id: WidgetId) -> Option<(&Checkbox, &Rectangle)> {
+		if let (WidgetKind::Checkbox(c), rect) = self.get_page(page_idx).get(id)? {
+			Some((c, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_checkbox_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Checkbox> {
-		if let WidgetKind::Checkbox(c) = self.get_page_mut(page_idx).get_mut(id)? {
-			Some(c)
+	pub fn get_checkbox_mut(
+		&mut self,
+		page_idx: u8,
+		id: WidgetId,
+	) -> Option<(&mut Checkbox, &mut Rectangle)> {
+		if let (WidgetKind::Checkbox(c), rect) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some((c, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_separator(&self, page_idx: u8, id: WidgetId) -> Option<&Separator> {
-		if let WidgetKind::Separator(s) = self.get_page(page_idx).get(id)? {
-			Some(s)
+	pub fn get_separator(&self, page_idx: u8, id: WidgetId) -> Option<(&Separator, &Rectangle)> {
+		if let (WidgetKind::Separator(s), rect) = self.get_page(page_idx).get(id)? {
+			Some((s, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_separator_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Separator> {
-		if let WidgetKind::Separator(s) = self.get_page_mut(page_idx).get_mut(id)? {
-			Some(s)
+	pub fn get_separator_mut(
+		&mut self,
+		page_idx: u8,
+		id: WidgetId,
+	) -> Option<(&mut Separator, &mut Rectangle)> {
+		if let (WidgetKind::Separator(s), rect) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some((s, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_textbox(&self, page_idx: u8, id: WidgetId) -> Option<&Textbox> {
-		if let WidgetKind::Textbox(t) = self.get_page(page_idx).get(id)? {
-			Some(t)
+	pub fn get_textbox(&self, page_idx: u8, id: WidgetId) -> Option<(&Textbox, &Rectangle)> {
+		if let (WidgetKind::Textbox(t), rect) = self.get_page(page_idx).get(id)? {
+			Some((t, rect))
 		} else {
 			None
 		}
 	}
 
-	pub fn get_textbox_mut(&mut self, page_idx: u8, id: WidgetId) -> Option<&mut Textbox> {
-		if let WidgetKind::Textbox(t) = self.get_page_mut(page_idx).get_mut(id)? {
-			Some(t)
+	pub fn get_textbox_mut(
+		&mut self,
+		page_idx: u8,
+		id: WidgetId,
+	) -> Option<(&mut Textbox, &mut Rectangle)> {
+		if let (WidgetKind::Textbox(t), rect) = self.get_page_mut(page_idx).get_mut(id)? {
+			Some((t, rect))
 		} else {
 			None
 		}
