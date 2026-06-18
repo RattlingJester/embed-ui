@@ -95,7 +95,7 @@ impl<const S: usize> Page<S> {
 	}
 
 	pub fn focus_next(&mut self) {
-		self.set_focused((self.focus_idx + 1) % self.count);
+		self.focus_set((self.focus_idx + 1) % self.count);
 	}
 
 	pub fn focus_prev(&mut self) {
@@ -105,7 +105,24 @@ impl<const S: usize> Page<S> {
 			self.focus_idx - 1
 		};
 
-		self.set_focused(prev);
+		self.focus_set(prev);
+	}
+
+	pub fn focus_set(&mut self, new_idx: WidgetId) {
+		if let Some(w) = self.get(new_idx)
+			&& !w.is_focusable()
+		{
+			return;
+		}
+
+		if let Some(w) = self.get_mut(self.focus_idx) {
+			w.set_focus(false);
+		}
+
+		self.focus_idx = new_idx;
+		if let Some(w) = self.get_mut(self.focus_idx) {
+			w.set_focus(true);
+		}
 	}
 
 	pub fn get(&self, index: WidgetId) -> Option<&WidgetKind> {
@@ -146,7 +163,7 @@ impl<const S: usize> Page<S> {
 		self.count += 1;
 
 		if self.count == 1 {
-			self.set_focused(0); // first widget gets focus
+			self.focus_set(0); // first widget gets focus
 		}
 
 		Ok(id)
@@ -160,23 +177,6 @@ impl<const S: usize> Page<S> {
 		self.count += 1;
 
 		Ok(id)
-	}
-
-	fn set_focused(&mut self, new_idx: usize) {
-		if let Some(w) = self.get(new_idx)
-			&& !w.is_focusable()
-		{
-			return;
-		}
-
-		if let Some(w) = self.get_mut(self.focus_idx) {
-			w.set_focus(false);
-		}
-
-		self.focus_idx = new_idx;
-		if let Some(w) = self.get_mut(self.focus_idx) {
-			w.set_focus(true);
-		}
 	}
 }
 
