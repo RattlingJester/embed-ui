@@ -67,7 +67,7 @@ impl<const S: usize> Page<S> {
 				.unwrap_or(false);
 
 			if is_hit || widget.is_pressed() {
-				widget.interact(rect, interaction);
+				widget.interact(interaction);
 			}
 
 			match widget {
@@ -166,6 +166,14 @@ impl<const S: usize> Page<S> {
 		}
 
 		true
+	}
+
+	pub fn widget_interact(&mut self, widget_id: WidgetId, interaction: Interaction) -> bool {
+		if let Some((w, _)) = &mut self.widgets[widget_id] {
+			w.interact(Some(interaction));
+		}
+
+		false
 	}
 
 	pub fn get(&self, index: WidgetId) -> Option<&WidgetKind> {

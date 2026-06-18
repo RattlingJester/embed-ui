@@ -32,7 +32,7 @@ pub trait Widget {
 		target: &mut D,
 	) -> Result<(), D::Error>;
 
-	fn interact(&mut self, _rect: &Rectangle, _interaction: Option<Interaction>) {}
+	fn interact(&mut self, _interaction: Option<Interaction>) {}
 	fn set_focus(&mut self, _focus: bool) {}
 	fn set_focusable(&mut self, _focusable: bool) {}
 	fn mark_clean(&mut self);

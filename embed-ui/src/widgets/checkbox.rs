@@ -80,11 +80,8 @@ impl Widget for Checkbox {
 		Ok(())
 	}
 
-	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>) {
-		let new_pressed = matches!(
-			interaction,
-			Some(Interaction::Click(p)) if rect.contains(p)
-		);
+	fn interact(&mut self, interaction: Option<Interaction>) {
+		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
 
 		if new_pressed && !self.held {
 			self.checked = !self.checked;

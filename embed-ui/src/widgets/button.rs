@@ -105,15 +105,9 @@ impl Widget for Button {
 		Ok(())
 	}
 
-	fn interact(&mut self, rect: &Rectangle, interaction: Option<Interaction>) {
-		let new_pressed = matches!(
-			interaction,
-			Some(Interaction::Click(p)) if rect.contains(p)
-		);
-		let released = matches!(
-			interaction,
-			Some(Interaction::Release(p)) if rect.contains(p)
-		);
+	fn interact(&mut self, interaction: Option<Interaction>) {
+		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
+		let released = matches!(interaction, Some(Interaction::Release(_)));
 
 		if released && self.pressed {
 			self.pressed = true;
