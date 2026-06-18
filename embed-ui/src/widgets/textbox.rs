@@ -55,8 +55,13 @@ impl Widget for Textbox {
 		rect: &Rectangle,
 		target: &mut D,
 	) -> Result<(), D::Error> {
+		let border_color = match self.focus {
+			true => style.focus_color,
+			false => style.border_color,
+		};
+
 		let border_style = PrimitiveStyleBuilder::new()
-			.stroke_color(style.border_color)
+			.stroke_color(border_color)
 			.stroke_width(style.border_width)
 			.fill_color(style.bg_color)
 			.build();
