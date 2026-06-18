@@ -110,7 +110,7 @@ impl Widget for Button {
 		let released = matches!(interaction, Some(Interaction::Release(_)));
 
 		if released && self.pressed {
-			self.pressed = true;
+			self.pressed = false;
 			self.changed = true;
 		}
 
