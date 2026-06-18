@@ -15,10 +15,10 @@ pub type WidgetId = usize;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
 pub struct Page<const WIDGET_COUNT: usize> {
-	pub widgets: [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
-	pub count:   usize,
-	focus_idx:   WidgetId,
-	pub layout:  Layout,
+	pub(crate) widgets: [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+	pub(crate) count:   usize,
+	focus_idx:          WidgetId,
+	layout:             Layout,
 }
 
 impl<const S: usize> Page<S> {
@@ -92,6 +92,10 @@ impl<const S: usize> Page<S> {
 				_ => (),
 			}
 		}
+	}
+
+	pub fn focused(&self) -> WidgetId {
+		self.focus_idx
 	}
 
 	pub fn focus_next(&mut self) {
