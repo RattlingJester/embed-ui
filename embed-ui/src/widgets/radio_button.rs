@@ -175,7 +175,7 @@ impl Widget for RadioButton {
 	}
 
 	fn is_focusable(&self) -> bool {
-		true
+		self.focusable
 	}
 
 	fn is_dirty(&self) -> bool {
