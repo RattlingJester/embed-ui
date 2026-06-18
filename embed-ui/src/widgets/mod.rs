@@ -24,7 +24,7 @@ pub mod textbox;
 pub const MAX_TEXT_LEN: usize = 32;
 
 #[enum_dispatch]
-pub(crate) trait Widget {
+pub trait Widget {
 	fn draw<D: DrawTarget>(
 		&mut self,
 		style: &Style<D::Color>,
