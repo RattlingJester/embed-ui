@@ -28,13 +28,18 @@ pub struct Button {
 }
 
 impl Button {
-	pub fn new(text: &str, font: &'static MonoFont<'static>, size: Size) -> Result<Self, Error> {
+	pub fn new(
+		text: &str,
+		font: &'static MonoFont<'static>,
+		size: Size,
+		focusable: bool,
+	) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
 			font,
 			size,
 			focus: false,
-			focusable: true,
+			focusable,
 			changed: true,
 			pressed: false,
 		})
