@@ -340,7 +340,7 @@ impl Layout {
 		Ok(widget_rect)
 	}
 
-	fn next_row(&mut self, size: Size) -> Result<Rectangle, Error> {
+	const fn next_row(&mut self, size: Size) -> Result<Rectangle, Error> {
 		if !self.check_bounds(size) {
 			return Err(Error::NoSpaceLeft);
 		}
@@ -365,11 +365,4 @@ impl Layout {
 	const fn check_bounds(&self, pos: Size) -> bool {
 		pos.width <= self.bounds.width && pos.height <= self.bounds.height
 	}
-
-	// const fn space_available(&self) -> Size {
-	// 	Size::new(
-	// 		self.bounds.width - self.pos.x as u32,
-	// 		self.bounds.height - self.pos.y as u32,
-	// 	)
-	// }
 }
