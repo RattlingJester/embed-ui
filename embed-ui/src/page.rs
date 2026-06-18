@@ -95,24 +95,65 @@ impl<const S: usize> Page<S> {
 	}
 
 	pub fn focus_next(&mut self) {
-		self.focus_set((self.focus_idx + 1) % self.count);
+		if self.count == 0 {
+			return;
+		}
+
+		let start_idx = (self.focus_idx + 1) % self.count;
+		let mut next_idx = start_idx;
+
+		loop {
+			if self.focus_set(next_idx) {
+				return;
+			}
+
+			next_idx = (next_idx + 1) % self.count;
+
+			if next_idx == start_idx {
+				return;
+			}
+		}
 	}
 
 	pub fn focus_prev(&mut self) {
-		let prev = if self.focus_idx == 0 {
+		if self.count == 0 {
+			return;
+		}
+
+		let start_idx = if self.focus_idx == 0 {
 			self.count - 1
 		} else {
 			self.focus_idx - 1
 		};
+		let mut prev_idx = start_idx;
 
-		self.focus_set(prev);
+		loop {
+			if self.focus_set(prev_idx) {
+				return;
+			}
+
+			prev_idx = if prev_idx == 0 {
+				self.count - 1
+			} else {
+				prev_idx - 1
+			};
+
+			if prev_idx == start_idx {
+				return;
+			}
+		}
 	}
 
-	pub fn focus_set(&mut self, new_idx: WidgetId) {
+	/// Returns false if `new_idx` is not focusable
+	pub fn focus_set(&mut self, new_idx: WidgetId) -> bool {
+		if new_idx >= self.count {
+			return false;
+		}
+
 		if let Some(w) = self.get(new_idx)
 			&& !w.is_focusable()
 		{
-			return;
+			return false;
 		}
 
 		if let Some(w) = self.get_mut(self.focus_idx) {
@@ -123,6 +164,8 @@ impl<const S: usize> Page<S> {
 		if let Some(w) = self.get_mut(self.focus_idx) {
 			w.set_focus(true);
 		}
+
+		true
 	}
 
 	pub fn get(&self, index: WidgetId) -> Option<&WidgetKind> {
