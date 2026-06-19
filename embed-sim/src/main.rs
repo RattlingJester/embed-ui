@@ -7,7 +7,8 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
-	DrawTarget, PixelColor, Rgb666,
+	DrawTarget, PixelColor, Rgb666, RgbColor,
+	colors::Rgb666_Packed,
 	input::{Event, Interaction},
 	page::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
 	painter::{Painter, SplitPainter},
@@ -22,13 +23,12 @@ use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
 
 use vector_protocol::{KinematicState, NUM_JOINTS};
 
-const SCREEN_W: usize = 320;
-const SCREEN_H: usize = 480;
-const SCREEN_PIXELS_COUNT: usize = SCREEN_W * SCREEN_H;
+pub const SCREEN_W: usize = 320;
+pub const SCREEN_H: usize = 480;
 
-const STRIP_COUNT: usize = 10;
-const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
-const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
+pub const STRIP_COUNT: usize = 8;
+pub const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
+pub const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
 
 const STEPS_STR: [&str; 4] = ["0.01", "0.1", "1", "10"];
 pub const STEPS_VAL: [f32; 4] = [0.01, 0.1, 1.0, 10.0];
@@ -63,20 +63,23 @@ fn main() {
 	window.update(&display);
 	display.clear(embed_ui::style::DEFAULT_STYLE_666.screen_bg);
 
-	println!(
-		"Screen pixels count: {SCREEN_PIXELS_COUNT}, strip count: {STRIP_COUNT}, strip height: {STRIP_H}"
-	);
-
-	let mut buf = [0; STRIP_PIXEL_COUNT * 3];
-
-	let painter: SplitPainter<10, SCREEN_W, STRIP_H, _> = SplitPainter::new();
-
+	let mut buf = [Rgb666::WHITE; STRIP_PIXEL_COUNT];
+	let painter: SplitPainter<STRIP_COUNT, SCREEN_W, STRIP_H, _> = SplitPainter::new();
 	let mut ui = Ui::new([page_main], painter, DEFAULT_STYLE_666);
 
 	let mut kin_state = KinematicState::default();
 	let mut new_state = KinematicState::default();
-
 	let mut interaction = None;
+
+	if let Some((WidgetKind::RadioButton(b), _)) = ui
+		.current_page_mut()
+		.get_mut(main_elements.steps_radio[ui_state.step_idx])
+	{
+		b.set_toggle(true);
+	}
+
+	ui.current_page_mut()
+		.focus_set(main_elements.joint_textboxes[ui_state.focused_joint]);
 
 	'run: loop {
 		window.update(&display);
@@ -111,6 +114,28 @@ fn main() {
 				} => {
 					let page = ui.current_page_mut();
 					page.focus_next();
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::W,
+					keymod: _,
+					repeat: _,
+				} => {
+					new_state.positions[ui_state.focused_joint] +=
+						STEPS_VAL[ui_state.step_idx].to_radians();
+
+					update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint);
+				}
+
+				SimulatorEvent::KeyDown {
+					keycode: Keycode::S,
+					keymod: _,
+					repeat: _,
+				} => {
+					new_state.positions[ui_state.focused_joint] -=
+						STEPS_VAL[ui_state.step_idx].to_radians();
+
+					update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint);
 				}
 
 				SimulatorEvent::KeyDown {
@@ -230,11 +255,10 @@ fn main() {
 
 		ui.begin_frame(interaction.take());
 
-		let pixel_slice = unsafe { &mut *(buf.as_mut_ptr() as *mut [Rgb666; STRIP_PIXEL_COUNT]) };
-
 		for strip in 0..STRIP_COUNT {
-			let rect = ui.draw(strip, pixel_slice).unwrap();
-			display.fill_contiguous(&rect, *pixel_slice).unwrap();
+			let rect = ui.draw(strip, &mut buf).unwrap();
+
+			display.fill_contiguous(&rect, buf).unwrap();
 		}
 
 		ui.end_frame();
