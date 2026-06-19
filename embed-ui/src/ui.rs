@@ -192,7 +192,7 @@ impl<const WIDGET_COUNT: usize, const PAGE_COUNT: usize, C: PixelColor, P: Paint
 		page.process(interaction, &mut self.events, self.active_page_idx);
 	}
 
-	pub fn paint_strip<const N: usize>(
+	pub fn draw<const N: usize>(
 		&mut self,
 		strip_count: usize,
 		buffer: &mut [C; N],

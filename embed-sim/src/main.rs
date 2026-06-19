@@ -7,10 +7,10 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
-	DrawTarget, Rgb666,
+	DrawTarget, PixelColor, Rgb666,
 	input::{Event, Interaction},
 	page::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
-	painter::SplitPainter,
+	painter::{Painter, SplitPainter},
 	style::DEFAULT_STYLE_666,
 	ui::Ui,
 	widgets::{
@@ -20,6 +20,8 @@ use embed_ui::{
 };
 use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
 
+use vector_protocol::{KinematicState, NUM_JOINTS};
+
 const SCREEN_W: usize = 320;
 const SCREEN_H: usize = 480;
 const SCREEN_PIXELS_COUNT: usize = SCREEN_W * SCREEN_H;
@@ -28,8 +30,8 @@ const STRIP_COUNT: usize = 10;
 const STRIP_H: usize = SCREEN_H.saturating_div(STRIP_COUNT);
 const STRIP_PIXEL_COUNT: usize = SCREEN_W * STRIP_H;
 
-const JOINT_STEPS: [&str; 4] = ["0.01", "0.1", "1", "10"];
-const MODES: [&str; 2] = ["JOG", "CART"];
+const STEPS_STR: [&str; 4] = ["0.01", "0.1", "1", "10"];
+pub const STEPS_VAL: [f32; 4] = [0.01, 0.1, 1.0, 10.0];
 
 struct Elements<const B: usize, const T: usize> {
 	buttons:         [WidgetId; B],
@@ -40,54 +42,18 @@ struct Elements<const B: usize, const T: usize> {
 }
 
 #[derive(Debug, Default)]
-struct UiState {
-	focused_joint: usize,
-	mode:          usize,
-	step:          f32,
-	positions:     [f32; 6],
-	status:        RobotState,
-}
-
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-enum RobotState {
-	#[default]
-	Init,
-	Idle,
-	Disconnected,
-	Moving {
-		cmd_id: u8,
-	},
-	MoveError,
-	EStop,
-}
-
-impl RobotState {
-	pub const fn as_str(self) -> &'static str {
-		match self {
-			Self::Init => "Init",
-			Self::Idle => "Idle",
-			Self::Disconnected => "Disconnected",
-			Self::Moving { cmd_id: _ } => "Moving",
-			Self::MoveError => "MoveError",
-			Self::EStop => "EStop",
-		}
-	}
-}
-
-struct WidgetIDs<const WIDGET_COUNT: usize> {
-	pub ids: [WidgetId; WIDGET_COUNT],
+pub struct UiState {
+	pub focused_joint: usize,
+	pub step_idx:      usize,
 }
 
 fn main() {
-	let mut state = UiState {
-		focused_joint: 0,
-		mode: 0,
-		step: 0.01,
-		..Default::default()
-	};
+	let (page_main, main_elements) = build_main_page::<30>().unwrap();
 
-	let (page_main, mut elements_main) = main_page::<50>(&state).unwrap();
-	let (page_settings, _elements_sett) = settings_page().unwrap();
+	let mut ui_state = UiState {
+		focused_joint: 0,
+		step_idx:      2,
+	};
 
 	let mut display = SimulatorDisplay::<Rgb666>::new(Size::new(320, 480));
 
@@ -105,7 +71,10 @@ fn main() {
 
 	let painter: SplitPainter<10, SCREEN_W, STRIP_H, _> = SplitPainter::new();
 
-	let mut ui = Ui::new([page_main, page_settings], painter, DEFAULT_STYLE_666);
+	let mut ui = Ui::new([page_main], painter, DEFAULT_STYLE_666);
+
+	let mut kin_state = KinematicState::default();
+	let mut new_state = KinematicState::default();
 
 	let mut interaction = None;
 
@@ -182,21 +151,76 @@ fn main() {
 
 		while let Some(event) = ui.drain_events() {
 			match event {
+				Event::ButtonClicked {
+					page_idx: 0,
+					widget_id,
+				} => {
+					if widget_id == main_elements.btn_menu {
+						ui.switch_to_page(1);
+					} else if widget_id == main_elements.btn_left {
+						ui.prev_page();
+					} else if widget_id == main_elements.btn_right {
+						ui.next_page();
+					} else if widget_id == main_elements.btn_reset {
+						new_state = kin_state;
+						for i in 0..6 {
+							update_joint_angle(&mut ui, &main_elements, &new_state, i);
+						}
+					} else if widget_id == main_elements.btn_run {
+						kin_state = new_state;
+
+						todo!("Send JOG to controller");
+					} else if let Some(joint) = main_elements
+						.joint_textboxes
+						.iter()
+						.position(|&i| i == widget_id)
+					{
+						ui.current_page_mut().focus_set(widget_id);
+						ui_state.focused_joint = joint;
+					} else if let Some(joint_zero) = main_elements
+						.joint_zeros
+						.iter()
+						.position(|&i| i == widget_id)
+					{
+						new_state.positions[joint_zero] = 0.0;
+						update_joint_angle(&mut ui, &main_elements, &new_state, joint_zero);
+					}
+				}
+
 				Event::RadioButtonToggled {
 					page_idx: 0,
 					widget_id,
-				} if widget_id != elements_main.mode_id => {
-					if let Some(WidgetKind::RadioButton(b)) =
-						ui.current_page_mut().get_mut(elements_main.mode_id)
-					{
-						b.set_toggle(false);
-					}
-
-					if let Some(WidgetKind::RadioButton(b)) =
-						ui.current_page_mut().get_mut(widget_id)
-					{
-						b.set_toggle(true);
-						elements_main.mode_id = widget_id;
+				} => {
+					if widget_id == main_elements.steps_radio[ui_state.step_idx] {
+						if let Some((WidgetKind::RadioButton(b), _)) =
+							ui.current_page_mut().get_mut(widget_id)
+						{
+							b.set_toggle(true);
+						}
+					} else {
+						if let Some((WidgetKind::RadioButton(b), _)) = ui
+							.current_page_mut()
+							.get_mut(main_elements.steps_radio[ui_state.step_idx])
+						{
+							b.set_toggle(false);
+						}
+						if let Some((WidgetKind::RadioButton(b), _)) =
+							ui.current_page_mut().get_mut(widget_id)
+						{
+							b.set_toggle(true);
+							ui_state.step_idx = main_elements
+								.steps_radio
+								.iter()
+								.position(|&e| e == widget_id)
+								.unwrap();
+						}
+						if let Some(step_index) = main_elements
+							.steps_radio
+							.iter()
+							.position(|&id| id == widget_id)
+						{
+							ui_state.step_idx = step_index;
+						}
 					}
 				}
 
@@ -209,7 +233,7 @@ fn main() {
 		let pixel_slice = unsafe { &mut *(buf.as_mut_ptr() as *mut [Rgb666; STRIP_PIXEL_COUNT]) };
 
 		for strip in 0..STRIP_COUNT {
-			let rect = ui.paint_strip(strip, pixel_slice).unwrap();
+			let rect = ui.draw(strip, pixel_slice).unwrap();
 			display.fill_contiguous(&rect, *pixel_slice).unwrap();
 		}
 
@@ -217,9 +241,20 @@ fn main() {
 	}
 }
 
-fn main_page<const W: usize>(
-	state: &UiState,
-) -> Result<(Page<W>, Elements<3, 6>), embed_ui::Error> {
+pub struct MainElements {
+	pub btn_left:        WidgetId,
+	pub btn_menu:        WidgetId,
+	pub btn_right:       WidgetId,
+	pub joint_textboxes: [WidgetId; 6],
+	pub joint_zeros:     [WidgetId; 6],
+	pub steps_radio:     [WidgetId; 4],
+	pub status_textbox:  WidgetId,
+	pub mode_textbox:    WidgetId,
+	pub btn_run:         WidgetId,
+	pub btn_reset:       WidgetId,
+}
+
+pub fn build_main_page<const W: usize>() -> Result<(Page<W>, MainElements), embed_ui::Error> {
 	let mut page = Page::new(
 		Size::new(SCREEN_W as u32, SCREEN_H as u32),
 		true,
@@ -229,92 +264,138 @@ fn main_page<const W: usize>(
 		},
 	);
 
-	let left_button = Button::new("<", &PROFONT_24_POINT, Size::new(50, 50))?;
-	let menu_button = Button::new("Joint jog", &PROFONT_24_POINT, Size::new(220, 50))?;
-	let right_button = Button::new(">", &PROFONT_24_POINT, Size::new(50, 50))?;
+	let btn_left = page.insert(WidgetKind::Button(Button::new(
+		"<",
+		&PROFONT_24_POINT,
+		Size::new(50, 50),
+		false,
+	)?))?;
+	let btn_menu = page.insert(WidgetKind::Button(Button::new(
+		"Joint jog",
+		&PROFONT_24_POINT,
+		Size::new(220, 50),
+		false,
+	)?))?;
+	let btn_right = page.insert(WidgetKind::Button(Button::new(
+		">",
+		&PROFONT_24_POINT,
+		Size::new(50, 50),
+		false,
+	)?))?;
 
-	let left_button_id = page.insert(WidgetKind::Button(left_button))?;
-	let menu_id = page.insert(WidgetKind::Button(menu_button))?;
-	let right_button_id = page.insert(WidgetKind::Button(right_button))?;
-
-	let mut joint_textboxes = [0; 6];
-	for (row, item) in joint_textboxes.iter_mut().enumerate() {
+	let mut joint_textboxes = [WidgetId::default(); 6];
+	let mut joint_zeros = [WidgetId::default(); 6];
+	for row in 0..6 {
 		let text: heapless::String<10> = heapless::format!("J{}", row + 1).unwrap_or_default();
-		let label = Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?;
-		let textbox = Textbox::new("", &PROFONT_24_POINT, Size::new(220, 50))?;
-		let button = Button::new("<0>", &PROFONT_18_POINT, Size::new(50, 50))?;
+		let _ = page.insert(WidgetKind::Label(Label::new(
+			&text,
+			&PROFONT_24_POINT,
+			Size::new(50, 50),
+		)?))?;
 
-		let _ = page.insert(WidgetKind::Label(label))?;
-		let textbox_id = page.insert(WidgetKind::Textbox(textbox))?;
-		let _button = page.insert(WidgetKind::Button(button))?;
+		let widget = WidgetKind::Button(Button::new(
+			"0.000",
+			&PROFONT_24_POINT,
+			Size::new(220, 50),
+			true,
+		)?);
 
-		*item = textbox_id;
+		let textbox_id = page.insert(widget)?;
+		joint_textboxes[row] = textbox_id;
+
+		let zero_id = page.insert(WidgetKind::Button(Button::new(
+			"<0>",
+			&PROFONT_18_POINT,
+			Size::new(50, 50),
+			false,
+		)?))?;
+		joint_zeros[row] = zero_id;
 	}
 
-	let mut steps = [0; 4];
+	let mut steps_radio = [WidgetId::default(); 4];
 	for row in 0..4 {
-		let button = RadioButton::new(
-			JOINT_STEPS[row],
+		let radio_id = page.insert(WidgetKind::RadioButton(RadioButton::new(
+			STEPS_STR[row],
 			&PROFONT_24_POINT,
 			Size::new(80, 50),
 			false,
-		)?;
-		let id = page.insert(WidgetKind::RadioButton(button))?;
-		steps[row] = id;
+		)?))?;
+		steps_radio[row] = radio_id;
 	}
 
-	if let Some(WidgetKind::RadioButton(b)) = page.get_mut(steps[0]) {
-		b.set_toggle(true);
-	}
+	let status_textbox = page.insert(WidgetKind::Textbox(Textbox::new(
+		"DISCONNECTED",
+		&PROFONT_18_POINT,
+		Size::new(240, 30),
+		false,
+	)?))?;
+	let mode_textbox = page.insert(WidgetKind::Textbox(Textbox::new(
+		"JOG",
+		&PROFONT_18_POINT,
+		Size::new(80, 30),
+		false,
+	)?))?;
 
-	let status = Textbox::new(state.status.as_str(), &PROFONT_18_POINT, Size::new(240, 30))?;
-	let status_id = page.insert(WidgetKind::Textbox(status))?;
+	let btn_run = page.insert(WidgetKind::Button(Button::new(
+		"RUN",
+		&PROFONT_18_POINT,
+		Size::new(160, 50),
+		false,
+	)?))?;
+	let btn_reset = page.insert(WidgetKind::Button(Button::new(
+		"RESET",
+		&PROFONT_18_POINT,
+		Size::new(160, 50),
+		false,
+	)?))?;
 
-	let mode = Textbox::new(MODES[state.mode], &PROFONT_18_POINT, Size::new(80, 30))?;
-	let mode_id = page.insert(WidgetKind::Textbox(mode))?;
-
-	let run = Button::new("RUN", &PROFONT_18_POINT, Size::new(160, 50))?;
-	let reset = Button::new("RESET", &PROFONT_18_POINT, Size::new(160, 50))?;
-
-	let _run_id = page.insert(WidgetKind::Button(run))?;
-	let _reset_id = page.insert(WidgetKind::Button(reset))?;
-
-	let e = Elements {
-		buttons: [left_button_id, menu_id, right_button_id],
-		joint_textboxes,
-		steps,
-		status_id,
-		mode_id,
-	};
-
-	Ok((page, e))
+	Ok((
+		page,
+		MainElements {
+			btn_left,
+			btn_menu,
+			btn_right,
+			joint_textboxes,
+			joint_zeros,
+			steps_radio,
+			status_textbox,
+			mode_textbox,
+			btn_run,
+			btn_reset,
+		},
+	))
 }
 
-fn settings_page<const W: usize>() -> Result<(Page<W>, WidgetIDs<5>), embed_ui::Error> {
-	let mut page = Page::new(
-		Size::new(320, 480),
-		true,
-		Align {
-			horizontal: HorizontalAlign::Left,
-			vertical:   VerticalAlign::Top,
-		},
-	);
+fn update_joint_angle<const W: usize, const PAGES: usize, C: PixelColor, P: Painter<C>>(
+	ui: &mut Ui<W, PAGES, C, P>,
+	elements: &MainElements,
+	kin_state: &KinematicState,
+	joint_idx: usize,
+) {
+	let text: heapless::String<32> =
+		heapless::format!("{:.3}", kin_state.positions[joint_idx].to_degrees()).unwrap_or_default();
 
-	let button = Button::new("SADAW", &embed_ui::ascii::FONT_10X20, Size::new(100, 50))?;
-	let checkbox = Checkbox::new(Size::new(50, 50));
-	let label = Label::new("KJASD", &embed_ui::ascii::FONT_10X20, Size::new(50, 50))?;
-	let separator = Separator::new(Size::new(320, 6));
-	let textbox = Textbox::new("ADAW", &embed_ui::ascii::FONT_10X20, Size::new(320, 100))?;
+	if let Some((t, _)) = ui.get_button_mut(0, elements.joint_textboxes[joint_idx]) {
+		t.set_text(&text).unwrap();
+	}
+}
 
-	let id1 = page.insert(WidgetKind::Button(button))?;
-	let id2 = page.insert(WidgetKind::Checkbox(checkbox))?;
-	let id3 = page.insert(WidgetKind::Label(label))?;
-	let id4 = page.insert_next_row(WidgetKind::Separator(separator))?;
-	let id5 = page.insert_next_row(WidgetKind::Textbox(textbox))?;
+// fn update_mode_textbox<const W: usize, const PAGES: usize, C: PixelColor, P: Painter<C>>(
+// 	ui: &mut Ui<W, PAGES, C, P>,
+// 	elements: &MainElements,
+// 	ui_state: &UiState,
+// ) {
+// 	if let Some((t, _)) = ui.get_textbox_mut(0, elements.mode_textbox) {
+// 		t.set_text(ui_state.mode.as_ref()).unwrap();
+// 	}
+// }
 
-	let elements = WidgetIDs {
-		ids: [id1, id2, id3, id4, id5],
-	};
-
-	Ok((page, elements))
+fn update_status_textbox<const W: usize, const PAGES: usize, C: PixelColor, P: Painter<C>>(
+	ui: &mut Ui<W, PAGES, C, P>,
+	elements: &MainElements,
+	kin_state: &KinematicState,
+) {
+	if let Some((t, _)) = ui.get_textbox_mut(0, elements.status_textbox) {
+		t.set_text(kin_state.state.as_ref()).unwrap();
+	}
 }
