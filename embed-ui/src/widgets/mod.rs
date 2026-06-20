@@ -27,6 +27,10 @@ pub trait Widget<C: PixelColor, const FB_SIZE: usize> {
 		false
 	}
 
+	fn set_active(&mut self, _active: bool) {}
+	fn set_text(&mut self, _text: &str) -> Result<(), Error> {
+		Ok(())
+	}
 	fn set_focus(&mut self, _focus: bool) {}
 	fn set_focusable(&mut self, _focusable: bool) {}
 	fn mark_clean(&mut self);

@@ -28,10 +28,6 @@ impl Checkbox {
 			changed: true,
 		}
 	}
-
-	pub fn is_checked(&self) -> bool {
-		self.checked
-	}
 }
 
 impl<C: PixelColor, const F: usize> Widget<C, F> for Checkbox {

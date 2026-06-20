@@ -10,6 +10,7 @@ pub mod ui;
 pub mod widgets;
 
 pub use embedded_graphics::{mono_font::*, pixelcolor::*, prelude::*, primitives::*};
+pub use embedded_graphics_framebuf::FrameBuf;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, thiserror::Error)]

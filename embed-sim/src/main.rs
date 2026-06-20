@@ -1,24 +1,21 @@
-#![allow(static_mut_refs)]
-
-use embedded_graphics::prelude::Size;
-use embedded_graphics_framebuf::FrameBuf;
 use embedded_graphics_simulator::{
 	OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 	sdl2::{Keycode, MouseButton},
 };
 
 use embed_ui::{
-	DrawTarget, Rgb666, RgbColor,
+	DrawTarget, Error, FrameBuf, PixelColor, Rgb666, RgbColor, Size,
 	alloc::{Allocator, Arena},
-	input::Interaction,
+	input::{Event, Interaction},
 	page::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
-	painter::SplitPainter,
+	painter::{Painter, SplitPainter},
 	style::DEFAULT_STYLE_666,
 	ui::Ui,
 	widgets::{button::Button, label::Label, radio_button::RadioButton, textbox::Textbox},
 };
 use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
 
+use static_cell::ConstStaticCell;
 use vector_protocol::KinematicState;
 
 pub const SCREEN_W: usize = 320;
@@ -37,39 +34,42 @@ pub struct UiState {
 	pub step_idx:      usize,
 }
 
-static mut ARENA: Arena<3072> = Arena::new();
+static ARENA: ConstStaticCell<Arena<3072>> = ConstStaticCell::new(Arena::new());
+static FRAMEBUF: ConstStaticCell<[Rgb666; STRIP_PIXEL_COUNT]> =
+	ConstStaticCell::new([Rgb666::WHITE; STRIP_PIXEL_COUNT]);
 
 fn main() {
-	let (page_main, main_elements) = build_main_page::<_, 30, _>(unsafe { &mut ARENA }).unwrap();
+	let (page_main, main_elements) = build_main_page::<_, 30, _>(ARENA.take()).unwrap();
 
-	let ui_state = UiState {
+	let mut ui_state = UiState {
 		focused_joint: 0,
 		step_idx:      2,
 	};
 
 	let mut display = SimulatorDisplay::<Rgb666>::new(Size::new(320, 480));
-
 	let output_settings = OutputSettingsBuilder::new().scale(2).build();
 	let mut window = Window::new("Test", &output_settings);
 
 	window.update(&display);
 	display.clear(embed_ui::style::DEFAULT_STYLE_666.screen_bg);
 
-	let mut buf = FrameBuf::new([Rgb666::WHITE; STRIP_PIXEL_COUNT], SCREEN_W, STRIP_H);
+	let fb = FRAMEBUF.take();
+	let mut buf = FrameBuf::new(*fb, SCREEN_W, STRIP_H);
+
 	let painter: SplitPainter<STRIP_COUNT, SCREEN_W, STRIP_H> = SplitPainter::new();
 
 	let mut ui = Ui::new([page_main], painter, DEFAULT_STYLE_666);
 
-	// let mut kin_state = KinematicState::default();
+	let kin_state = KinematicState::default();
 	let mut new_state = KinematicState::default();
 	let mut interaction = None;
 
-	// if let Some((WidgetKind::RadioButton(b), _)) = ui
-	// 	.current_page_mut()
-	// 	.get_mut(main_elements.steps_radio[ui_state.step_idx])
-	// {
-	// 	b.set_toggle(true);
-	// }
+	if let Some((w, _)) = ui
+		.current_page_mut()
+		.get_mut(main_elements.steps_radio[ui_state.step_idx])
+	{
+		w.set_active(true);
+	}
 
 	ui.current_page_mut()
 		.focus_set(main_elements.joint_textboxes[ui_state.focused_joint]);
@@ -98,6 +98,11 @@ fn main() {
 				} => {
 					let page = ui.current_page_mut();
 					page.focus_prev();
+					ui_state.focused_joint = main_elements
+						.joint_textboxes
+						.iter()
+						.position(|&i| i == page.focused())
+						.unwrap();
 				}
 
 				SimulatorEvent::KeyDown {
@@ -107,6 +112,11 @@ fn main() {
 				} => {
 					let page = ui.current_page_mut();
 					page.focus_next();
+					ui_state.focused_joint = main_elements
+						.joint_textboxes
+						.iter()
+						.position(|&i| i == page.focused())
+						.unwrap();
 				}
 
 				SimulatorEvent::KeyDown {
@@ -117,7 +127,8 @@ fn main() {
 					new_state.positions[ui_state.focused_joint] +=
 						STEPS_VAL[ui_state.step_idx].to_radians();
 
-					// update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint);
+					update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint)
+						.unwrap();
 				}
 
 				SimulatorEvent::KeyDown {
@@ -128,7 +139,8 @@ fn main() {
 					new_state.positions[ui_state.focused_joint] -=
 						STEPS_VAL[ui_state.step_idx].to_radians();
 
-					// update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint);
+					update_joint_angle(&mut ui, &main_elements, &new_state, ui_state.focused_joint)
+						.unwrap();
 				}
 
 				SimulatorEvent::KeyDown {
@@ -167,84 +179,70 @@ fn main() {
 			}
 		}
 
-		// while let Some(event) = ui.drain_events() {
-		// 	match event {
-		// 		Event::ButtonClicked {
-		// 			page_idx: 0,
-		// 			widget_id,
-		// 		} => {
-		// 			if widget_id == main_elements.btn_menu {
-		// 				ui.switch_to_page(1);
-		// 			} else if widget_id == main_elements.btn_left {
-		// 				ui.prev_page();
-		// 			} else if widget_id == main_elements.btn_right {
-		// 				ui.next_page();
-		// 			} else if widget_id == main_elements.btn_reset {
-		// 				new_state = kin_state;
-		// 				for i in 0..6 {
-		// 					update_joint_angle(&mut ui, &main_elements, &new_state, i);
-		// 				}
-		// 			} else if widget_id == main_elements.btn_run {
-		// 				kin_state = new_state;
+		while let Some(event) = ui.drain_events() {
+			let Event {
+				page_idx,
+				widget_id,
+			} = event;
+			if page_idx == 0 {
+				if widget_id == main_elements.btn_menu {
+					ui.switch_to_page(1);
+				} else if widget_id == main_elements.btn_left {
+					ui.prev_page();
+				} else if widget_id == main_elements.btn_right {
+					ui.next_page();
+				} else if widget_id == main_elements.btn_reset {
+					new_state = kin_state;
+					for i in 0..6 {
+						update_joint_angle(&mut ui, &main_elements, &new_state, i).unwrap();
+					}
+				} else if widget_id == main_elements.btn_run {
+					// kin_state = new_state;
 
-		// 				todo!("Send JOG to controller");
-		// 			} else if let Some(joint) = main_elements
-		// 				.joint_textboxes
-		// 				.iter()
-		// 				.position(|&i| i == widget_id)
-		// 			{
-		// 				ui.current_page_mut().focus_set(widget_id);
-		// 				ui_state.focused_joint = joint;
-		// 			} else if let Some(joint_zero) = main_elements
-		// 				.joint_zeros
-		// 				.iter()
-		// 				.position(|&i| i == widget_id)
-		// 			{
-		// 				new_state.positions[joint_zero] = 0.0;
-		// 				update_joint_angle(&mut ui, &main_elements, &new_state, joint_zero);
-		// 			}
-		// 		}
-
-		// 		Event::RadioButtonToggled {
-		// 			page_idx: 0,
-		// 			widget_id,
-		// 		} => {
-		// 			if widget_id == main_elements.steps_radio[ui_state.step_idx] {
-		// 				if let Some((WidgetKind::RadioButton(b), _)) =
-		// 					ui.current_page_mut().get_mut(widget_id)
-		// 				{
-		// 					b.set_toggle(true);
-		// 				}
-		// 			} else {
-		// 				if let Some((WidgetKind::RadioButton(b), _)) = ui
-		// 					.current_page_mut()
-		// 					.get_mut(main_elements.steps_radio[ui_state.step_idx])
-		// 				{
-		// 					b.set_toggle(false);
-		// 				}
-		// 				if let Some((WidgetKind::RadioButton(b), _)) =
-		// 					ui.current_page_mut().get_mut(widget_id)
-		// 				{
-		// 					b.set_toggle(true);
-		// 					ui_state.step_idx = main_elements
-		// 						.steps_radio
-		// 						.iter()
-		// 						.position(|&e| e == widget_id)
-		// 						.unwrap();
-		// 				}
-		// 				if let Some(step_index) = main_elements
-		// 					.steps_radio
-		// 					.iter()
-		// 					.position(|&id| id == widget_id)
-		// 				{
-		// 					ui_state.step_idx = step_index;
-		// 				}
-		// 			}
-		// 		}
-
-		// 		_ => (),
-		// 	}
-		// }
+					todo!("Send JOG to controller");
+				} else if let Some(joint) = main_elements
+					.joint_textboxes
+					.iter()
+					.position(|&i| i == widget_id)
+				{
+					ui.current_page_mut().focus_set(widget_id);
+					ui_state.focused_joint = joint;
+				} else if let Some(joint_zero) = main_elements
+					.joint_zeros
+					.iter()
+					.position(|&i| i == widget_id)
+				{
+					new_state.positions[joint_zero] = 0.0;
+					update_joint_angle(&mut ui, &main_elements, &new_state, joint_zero).unwrap();
+				} else if widget_id == main_elements.steps_radio[ui_state.step_idx] {
+					if let Some((b, _)) = ui.current_page_mut().get_mut(widget_id) {
+						b.set_active(true);
+					}
+				} else {
+					if let Some((b, _)) = ui
+						.current_page_mut()
+						.get_mut(main_elements.steps_radio[ui_state.step_idx])
+					{
+						b.set_active(false);
+					}
+					if let Some((b, _)) = ui.current_page_mut().get_mut(widget_id) {
+						b.set_active(true);
+						ui_state.step_idx = main_elements
+							.steps_radio
+							.iter()
+							.position(|&e| e == widget_id)
+							.unwrap();
+					}
+					if let Some(step_index) = main_elements
+						.steps_radio
+						.iter()
+						.position(|&id| id == widget_id)
+					{
+						ui_state.step_idx = step_index;
+					}
+				}
+			}
+		}
 
 		ui.begin_frame(interaction.take());
 
@@ -380,32 +378,47 @@ pub fn build_main_page<A: Allocator + 'static, const W: usize, const F: usize>(
 	))
 }
 
-// fn update_joint_angle<
+fn update_joint_angle<
+	const W: usize,
+	const PAGES: usize,
+	const FB_SIZE: usize,
+	A: Allocator + 'static,
+	C: PixelColor,
+	P: Painter,
+>(
+	ui: &mut Ui<W, PAGES, FB_SIZE, A, C, P>,
+	elements: &MainElements,
+	kin_state: &KinematicState,
+	joint_idx: usize,
+) -> Result<(), Error> {
+	let text: heapless::String<32> =
+		heapless::format!("{:.3}", kin_state.positions[joint_idx].to_degrees()).unwrap_or_default();
+
+	if let Some((t, _)) = ui
+		.get_page_mut(0)
+		.get_mut(elements.joint_textboxes[joint_idx])
+	{
+		t.set_text(&text)?;
+	}
+
+	Ok(())
+}
+
+// fn update_status_textbox<
 // 	const W: usize,
 // 	const PAGES: usize,
 // 	const FB_SIZE: usize,
+// 	A: Allocator + 'static,
 // 	C: PixelColor,
 // 	P: Painter,
 // >(
-// 	ui: &mut Ui<W, PAGES, FB_SIZE, C, P>,
+// 	ui: &mut Ui<W, PAGES, FB_SIZE, A, C, P>,
 // 	elements: &MainElements,
 // 	kin_state: &KinematicState,
-// 	joint_idx: usize,
-// ) {
-// 	let text: heapless::String<32> =
-// 		heapless::format!("{:.3}", kin_state.positions[joint_idx].to_degrees()).unwrap_or_default();
-
-// 	if let Some((t, _)) = ui.get_button_mut(0, elements.joint_textboxes[joint_idx]) {
-// 		t.set_text(&text).unwrap();
+// ) -> Result<(), Error> {
+// 	if let Some((t, _)) = ui.get_page_mut(0).get_mut(elements.status_textbox) {
+// 		t.set_text(kin_state.state.as_ref())?;
 // 	}
-// }
 
-// fn update_status_textbox<const W: usize, const PAGES: usize, C: PixelColor, P: Painter<C>>(
-// 	ui: &mut Ui<W, PAGES, C, P>,
-// 	elements: &MainElements,
-// 	kin_state: &KinematicState,
-// ) {
-// 	if let Some((t, _)) = ui.get_textbox_mut(0, elements.status_textbox) {
-// 		t.set_text(kin_state.state.as_ref()).unwrap();
-// 	}
+// 	Ok(())
 // }

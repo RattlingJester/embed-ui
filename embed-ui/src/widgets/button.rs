@@ -45,18 +45,6 @@ impl Button {
 			pressed: false,
 		})
 	}
-
-	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
-	pub fn is_clicked(&self) -> bool {
-		self.pressed
-	}
 }
 
 impl<C: PixelColor, const F: usize> Widget<C, F> for Button {
@@ -123,6 +111,14 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Button {
 		} else {
 			false
 		}
+	}
+
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
 	}
 
 	fn mark_clean(&mut self) {

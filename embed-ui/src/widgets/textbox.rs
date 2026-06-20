@@ -44,14 +44,6 @@ impl Textbox {
 			changed: true,
 		})
 	}
-
-	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
 }
 
 impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
@@ -93,6 +85,14 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
 			ts,
 		)
 		.draw(target)?;
+
+		Ok(())
+	}
+
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
 
 		Ok(())
 	}

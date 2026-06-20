@@ -48,25 +48,6 @@ impl RadioButton {
 			toggled: false,
 		})
 	}
-
-	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
-	pub fn set_toggle(&mut self, toggle: bool) {
-		if self.toggled != toggle {
-			self.toggled = toggle;
-			self.changed = true;
-		}
-	}
-
-	pub fn is_clicked(&self) -> bool {
-		self.pressed
-	}
 }
 impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 	fn draw(
@@ -148,6 +129,21 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 		}
 
 		false
+	}
+
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
+
+	fn set_active(&mut self, active: bool) {
+		if self.toggled != active {
+			self.toggled = active;
+			self.changed = true;
+		}
 	}
 
 	fn set_focus(&mut self, focus: bool) {
