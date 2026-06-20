@@ -3,19 +3,16 @@ pub trait Allocator {
 }
 
 #[derive(Debug)]
-#[repr(C)]
 pub struct Arena<const N: usize> {
-	align_dummy: [u64; 0],
-	buffer:      [u8; N],
-	offset:      usize,
+	buffer: [u8; N],
+	offset: usize,
 }
 
 impl<const N: usize> Arena<N> {
 	pub const fn new() -> Self {
 		Self {
-			align_dummy: [],
-			buffer:      [0; N],
-			offset:      0,
+			buffer: [0; N],
+			offset: 0,
 		}
 	}
 }
