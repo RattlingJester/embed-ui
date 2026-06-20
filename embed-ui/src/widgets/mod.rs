@@ -23,9 +23,7 @@ pub trait Widget<C: PixelColor, const FB_SIZE: usize> {
 		target: &mut FrameBuf<C, [C; FB_SIZE]>,
 	) -> Result<(), Error>;
 
-	fn interact(&mut self, _interaction: Option<Interaction>) -> bool {
-		false
-	}
+	fn interact(&mut self, _interaction: Option<Interaction>) {}
 
 	fn set_active(&mut self, _active: bool) {}
 	fn set_text(&mut self, _text: &str) -> Result<(), Error> {
@@ -36,8 +34,11 @@ pub trait Widget<C: PixelColor, const FB_SIZE: usize> {
 	fn mark_clean(&mut self);
 
 	fn size(&self) -> Size;
+	fn is_changed(&self) -> bool;
 	fn is_focusable(&self) -> bool {
 		false
 	}
-	fn is_dirty(&self) -> bool;
+	fn is_pressed(&self) -> bool {
+		false
+	}
 }

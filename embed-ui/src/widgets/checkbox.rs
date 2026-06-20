@@ -77,22 +77,18 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Checkbox {
 		Ok(())
 	}
 
-	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
-		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
-
-		if new_pressed && !self.held {
-			self.checked = !self.checked;
-			self.held = true;
-			self.changed = true;
-			return true;
+	fn interact(&mut self, interaction: Option<Interaction>) {
+		match interaction {
+			Some(Interaction::Click(_)) if !self.checked => {
+				self.checked = true;
+				self.changed = true;
+			}
+			Some(Interaction::Release(_)) if self.checked => {
+				self.checked = false;
+				self.changed = true;
+			}
+			_ => (),
 		}
-
-		if !new_pressed {
-			self.held = false;
-			return true;
-		}
-
-		false
 	}
 
 	fn mark_clean(&mut self) {
@@ -118,7 +114,7 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Checkbox {
 		self.focusable
 	}
 
-	fn is_dirty(&self) -> bool {
+	fn is_changed(&self) -> bool {
 		self.changed
 	}
 }

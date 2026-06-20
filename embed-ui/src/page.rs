@@ -51,7 +51,7 @@ impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
 		let mut mask = 0u32;
 		for entry in self.widgets[..self.count].iter().flatten() {
 			let (widget, rect) = entry;
-			if widget.is_dirty() {
+			if widget.is_changed() {
 				let y0 = rect.top_left.y.max(0) as usize;
 				let y1 = (y0 + rect.size.height as usize).saturating_sub(1);
 				let first = y0 / strip_h;
@@ -78,11 +78,16 @@ impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
 				.unwrap_or(false);
 
 			unsafe {
-				if is_hit && widget.interact(interaction) {
-					events.enqueue_unchecked(Event {
-						page_idx,
-						widget_id,
-					});
+				if is_hit {
+					widget.interact(interaction);
+					if widget.is_changed() {
+						events.enqueue_unchecked(Event {
+							page_idx,
+							widget_id,
+						});
+					}
+				} else {
+					widget.interact(None);
 				}
 			}
 		}

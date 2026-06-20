@@ -112,23 +112,22 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 		Ok(())
 	}
 
-	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
-		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
-		let released = matches!(interaction, Some(Interaction::Release(_)));
-
-		if released && self.pressed {
-			self.pressed = false;
-			self.changed = true;
-			return true;
+	fn interact(&mut self, interaction: Option<Interaction>) {
+		match interaction {
+			Some(Interaction::Click(_)) if !self.pressed => {
+				self.pressed = true;
+				self.changed = true;
+			}
+			Some(Interaction::Release(_)) if self.pressed => {
+				self.pressed = false;
+				self.changed = true;
+			}
+			None if self.pressed => {
+				self.pressed = false;
+				self.changed = true;
+			}
+			_ => (),
 		}
-
-		if new_pressed != self.pressed {
-			self.pressed = new_pressed;
-			self.changed = true;
-			return true;
-		}
-
-		false
 	}
 
 	fn set_text(&mut self, text: &str) -> Result<(), Error> {
@@ -169,7 +168,11 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 		self.focusable
 	}
 
-	fn is_dirty(&self) -> bool {
+	fn is_changed(&self) -> bool {
 		self.changed
+	}
+
+	fn is_pressed(&self) -> bool {
+		self.pressed
 	}
 }

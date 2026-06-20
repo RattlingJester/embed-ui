@@ -120,7 +120,7 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
 		self.size
 	}
 
-	fn is_dirty(&self) -> bool {
+	fn is_changed(&self) -> bool {
 		self.changed
 	}
 }
