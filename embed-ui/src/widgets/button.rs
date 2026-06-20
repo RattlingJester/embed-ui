@@ -95,22 +95,33 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Button {
 	}
 
 	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
-		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
-		let released = matches!(interaction, Some(Interaction::Release(_)));
+		match interaction {
+			Some(Interaction::Click(_)) => {
+				if !self.pressed {
+					self.pressed = true;
+					self.changed = true;
+					return true;
+				}
+			}
+			Some(Interaction::Release(_)) => {
+				if self.pressed {
+					self.pressed = false;
+					self.changed = true;
 
-		if released && self.pressed {
-			self.pressed = false;
-			self.changed = true;
+					return true;
+				}
+			}
+			Some(Interaction::Drag(_)) => todo!(),
+			None => {
+				if self.pressed {
+					self.pressed = false;
+					self.changed = true;
+					return true;
+				}
+			}
 		}
 
-		if new_pressed != self.pressed {
-			self.pressed = new_pressed;
-			self.changed = true;
-
-			true
-		} else {
-			false
-		}
+		false
 	}
 
 	fn set_text(&mut self, text: &str) -> Result<(), Error> {
