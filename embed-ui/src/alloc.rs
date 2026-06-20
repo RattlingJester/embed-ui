@@ -3,6 +3,7 @@ pub trait Allocator {
 }
 
 #[derive(Debug)]
+#[repr(align(8))]
 pub struct Arena<const N: usize> {
 	buffer: [u8; N],
 	offset: usize,
