@@ -1,5 +1,5 @@
 use embedded_graphics::{
-	prelude::{Point, Size},
+	prelude::{PixelColor, Point, Size},
 	primitives::Rectangle,
 };
 use heapless::spsc::Queue;
@@ -7,21 +7,21 @@ use heapless::spsc::Queue;
 use crate::{
 	Error,
 	input::{Event, Interaction},
-	widgets::{Widget, WidgetKind},
+	widgets::Widget,
 };
 
 pub type WidgetId = usize;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug)]
-pub struct Page<const WIDGET_COUNT: usize> {
-	pub(crate) widgets: [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
+// #[derive(Debug)]
+pub struct Page<'a, C: PixelColor, const WIDGET_COUNT: usize, const FB_SIZE: usize> {
+	pub(crate) widgets: [Option<(&'a mut dyn Widget<C, FB_SIZE>, Rectangle)>; WIDGET_COUNT],
 	pub(crate) count:   usize,
 	focus_idx:          WidgetId,
 	layout:             Layout,
 }
 
-impl<const S: usize> Page<S> {
+impl<'a, C: PixelColor, const S: usize, const FB_SIZE: usize> Page<'a, C, S, FB_SIZE> {
 	pub const fn new(size: Size, wrap: bool, align: Align) -> Self {
 		let layout = Layout::new(size, wrap, align);
 
@@ -53,10 +53,10 @@ impl<const S: usize> Page<S> {
 		mask
 	}
 
-	pub fn process<const N: usize>(
+	pub fn process<const E: usize>(
 		&mut self,
 		interaction: Option<Interaction>,
-		events: &mut Queue<Event, N>,
+		events: &mut Queue<Event, E>,
 		page_idx: u8,
 	) {
 		for (widget_id, (widget, rect)) in
@@ -66,30 +66,13 @@ impl<const S: usize> Page<S> {
 				.map(|i| rect.contains(i.point()))
 				.unwrap_or(false);
 
-			if is_hit || widget.is_pressed() {
-				widget.interact(interaction);
-			}
-
-			match widget {
-				WidgetKind::Button(b) if b.is_clicked() => unsafe {
-					events.enqueue_unchecked(Event::ButtonClicked {
+			unsafe {
+				if is_hit && widget.interact(interaction) {
+					events.enqueue_unchecked(Event {
 						page_idx,
 						widget_id,
-					})
-				},
-				WidgetKind::RadioButton(b) if b.is_clicked() => unsafe {
-					events.enqueue_unchecked(Event::RadioButtonToggled {
-						page_idx,
-						widget_id,
-					})
-				},
-				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
-					events.enqueue_unchecked(Event::CheckboxToggled {
-						page_idx,
-						widget_id,
-					})
-				},
-				_ => (),
+					});
+				}
 			}
 		}
 	}
@@ -172,29 +155,51 @@ impl<const S: usize> Page<S> {
 		true
 	}
 
-	pub fn get(&self, index: WidgetId) -> Option<(&WidgetKind, &Rectangle)> {
+	pub fn get(&self, index: WidgetId) -> Option<(&dyn Widget<C, FB_SIZE>, &Rectangle)> {
 		self.widgets
 			.get(index)
 			.and_then(|opt| opt.as_ref())
-			.map(|(widget, rect)| (widget, rect))
+			.map(|(widget, rect)| (&**widget, rect))
 	}
 
-	pub fn get_mut(&mut self, index: WidgetId) -> Option<(&mut WidgetKind, &mut Rectangle)> {
-		self.widgets
-			.get_mut(index)
-			.and_then(|opt| opt.as_mut())
-			.map(|(widget, rect)| (widget, rect))
+	pub fn get_mut(
+		&mut self,
+		index: WidgetId,
+	) -> Option<(&mut dyn Widget<C, FB_SIZE>, &mut Rectangle)> {
+		match self.widgets.get_mut(index) {
+			Some(Some((widget, rect))) => Some((&mut **widget, rect)),
+			_ => None,
+		}
 	}
 
-	pub fn iter(&self) -> impl Iterator<Item = &(WidgetKind, Rectangle)> {
-		self.widgets[..self.count].iter().flatten()
+	pub fn iter(&self) -> impl Iterator<Item = (&dyn Widget<C, FB_SIZE>, &Rectangle)> {
+		self.widgets[..self.count]
+			.iter()
+			.flatten()
+			.map(|(widget, rect)| (&**widget, rect))
 	}
 
-	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (WidgetKind, Rectangle)> {
-		self.widgets[..self.count].iter_mut().flatten()
+	pub fn iter_mut(
+		&mut self,
+	) -> impl Iterator<Item = (&mut dyn Widget<C, FB_SIZE>, &mut Rectangle)> {
+		self.widgets[..self.count]
+			.iter_mut()
+			.filter_map(|slot| match slot {
+				Some((widget, rect)) => {
+					let raw_fat_ptr = widget as *mut &'a mut dyn Widget<C, FB_SIZE>
+						as *mut *mut dyn Widget<C, FB_SIZE>;
+
+					unsafe {
+						let widget_short_ref: &mut (dyn Widget<C, FB_SIZE> + '_) =
+							&mut **raw_fat_ptr;
+						Some((widget_short_ref, rect))
+					}
+				}
+				None => None,
+			})
 	}
 
-	pub fn insert(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
+	pub fn insert<W: Widget<C, FB_SIZE>>(&mut self, widget: &'a mut W) -> Result<WidgetId, Error> {
 		let rect = self.layout.next(widget.size())?;
 
 		let id = self.count;
@@ -208,7 +213,10 @@ impl<const S: usize> Page<S> {
 		Ok(id)
 	}
 
-	pub fn insert_next_row(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
+	pub fn insert_next_row<W: Widget<C, FB_SIZE>>(
+		&mut self,
+		widget: &'a mut W,
+	) -> Result<WidgetId, Error> {
 		let rect = self.layout.next_row(widget.size())?;
 
 		let id = self.count;

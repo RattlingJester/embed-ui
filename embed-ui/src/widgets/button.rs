@@ -6,6 +6,7 @@ use embedded_graphics::{
 	primitives::{PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -58,13 +59,13 @@ impl Button {
 	}
 }
 
-impl Widget for Button {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for Button {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let bg = if self.pressed {
 			style.active_color
 		} else {
@@ -105,7 +106,7 @@ impl Widget for Button {
 		Ok(())
 	}
 
-	fn interact(&mut self, interaction: Option<Interaction>) {
+	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
 		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
 		let released = matches!(interaction, Some(Interaction::Release(_)));
 
@@ -117,6 +118,10 @@ impl Widget for Button {
 		if new_pressed != self.pressed {
 			self.pressed = new_pressed;
 			self.changed = true;
+
+			true
+		} else {
+			false
 		}
 	}
 
@@ -137,10 +142,6 @@ impl Widget for Button {
 
 	fn size(&self) -> Size {
 		self.size
-	}
-
-	fn is_pressed(&self) -> bool {
-		self.pressed
 	}
 
 	fn is_focusable(&self) -> bool {

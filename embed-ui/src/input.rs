@@ -20,10 +20,17 @@ impl Interaction {
 	}
 }
 
+// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+// #[derive(Debug)]
+// pub enum Event {
+// 	ButtonClicked { page_idx: u8, widget_id: WidgetId },
+// 	RadioButtonToggled { page_idx: u8, widget_id: WidgetId },
+// 	CheckboxToggled { page_idx: u8, widget_id: WidgetId },
+// }
+
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug)]
-pub enum Event {
-	ButtonClicked { page_idx: u8, widget_id: WidgetId },
-	RadioButtonToggled { page_idx: u8, widget_id: WidgetId },
-	CheckboxToggled { page_idx: u8, widget_id: WidgetId },
+#[derive(Debug, Clone, PartialEq)]
+pub struct Event {
+	pub page_idx:  u8,
+	pub widget_id: WidgetId,
 }

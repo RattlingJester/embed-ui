@@ -2,8 +2,9 @@ use embedded_graphics::{
 	prelude::*,
 	primitives::{PrimitiveStyleBuilder, Rectangle},
 };
+use embedded_graphics_framebuf::FrameBuf;
 
-use crate::{input::Interaction, style::Style, widgets::Widget};
+use crate::{Error, input::Interaction, style::Style, widgets::Widget};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
@@ -33,13 +34,13 @@ impl Checkbox {
 	}
 }
 
-impl Widget for Checkbox {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for Checkbox {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let bg = if self.checked {
 			style.active_color
 		} else {
@@ -80,18 +81,22 @@ impl Widget for Checkbox {
 		Ok(())
 	}
 
-	fn interact(&mut self, interaction: Option<Interaction>) {
+	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
 		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
 
 		if new_pressed && !self.held {
 			self.checked = !self.checked;
 			self.held = true;
 			self.changed = true;
+			return true;
 		}
 
 		if !new_pressed {
 			self.held = false;
+			return true;
 		}
+
+		false
 	}
 
 	fn mark_clean(&mut self) {
@@ -111,10 +116,6 @@ impl Widget for Checkbox {
 			self.changed = true;
 			self.focus = focus;
 		}
-	}
-
-	fn is_pressed(&self) -> bool {
-		self.checked
 	}
 
 	fn is_focusable(&self) -> bool {

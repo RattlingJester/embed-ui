@@ -3,10 +3,11 @@ use core::str::FromStr;
 use embedded_graphics::{
 	Drawable,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{DrawTarget, Point, Primitive, Size},
+	prelude::{PixelColor, Point, Primitive, Size},
 	primitives::{Line, PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -67,13 +68,13 @@ impl RadioButton {
 		self.pressed
 	}
 }
-impl Widget for RadioButton {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let bg = if self.pressed {
 			style.active_color
 		} else {
@@ -130,19 +131,23 @@ impl Widget for RadioButton {
 		Ok(())
 	}
 
-	fn interact(&mut self, interaction: Option<Interaction>) {
+	fn interact(&mut self, interaction: Option<Interaction>) -> bool {
 		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
 		let released = matches!(interaction, Some(Interaction::Release(_)));
 
 		if released && self.pressed {
 			self.pressed = false;
 			self.changed = true;
+			return true;
 		}
 
 		if new_pressed != self.pressed {
 			self.pressed = new_pressed;
 			self.changed = true;
+			return true;
 		}
+
+		false
 	}
 
 	fn set_focus(&mut self, focus: bool) {
@@ -162,10 +167,6 @@ impl Widget for RadioButton {
 
 	fn size(&self) -> Size {
 		self.size
-	}
-
-	fn is_pressed(&self) -> bool {
-		self.pressed
 	}
 
 	fn is_focusable(&self) -> bool {

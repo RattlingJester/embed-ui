@@ -3,11 +3,12 @@ use core::str::FromStr;
 use embedded_graphics::{
 	Drawable,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{DrawTarget, Point, Size},
+	prelude::{PixelColor, Point, Size},
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -53,13 +54,13 @@ impl Textbox {
 	}
 }
 
-impl Widget for Textbox {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let border_color = match self.focus {
 			true => style.focus_color,
 			false => style.border_color,

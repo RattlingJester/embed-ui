@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod alloc;
 pub mod colors;
 pub mod input;
 pub mod page;
@@ -17,6 +18,6 @@ pub enum Error {
 	Capacity(#[from] heapless::CapacityError),
 	#[error("No space left inside layout")]
 	NoSpaceLeft,
-	#[error("Fatal internal error")]
-	Fatal,
+	#[error(transparent)]
+	Draw(#[from] core::convert::Infallible),
 }
