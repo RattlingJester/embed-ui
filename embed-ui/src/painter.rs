@@ -4,7 +4,7 @@ use embedded_graphics::{
 };
 use embedded_graphics_framebuf::FrameBuf;
 
-use crate::{Error, page::Page, style::Style};
+use crate::{Error, alloc::Allocator, page::Page, style::Style};
 
 // #[derive(Debug)]
 // #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -31,12 +31,12 @@ use crate::{Error, page::Page, style::Style};
 // }
 
 pub trait Painter {
-	fn paint<C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
+	fn paint<A: Allocator, C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
 		&mut self,
 		strip_count: usize,
 		style: &Style<C>,
 		buffer: &mut FrameBuf<C, [C; N]>,
-		page: &mut Page<C, WIDGET_COUNT, N>,
+		page: &mut Page<C, A, WIDGET_COUNT, N>,
 	) -> Result<Rectangle, Error>;
 }
 
@@ -56,12 +56,12 @@ impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize>
 impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize> Painter
 	for SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H>
 {
-	fn paint<C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
+	fn paint<A: Allocator, C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
 		&mut self,
 		strip_count: usize,
 		style: &Style<C>,
 		buffer: &mut FrameBuf<C, [C; N]>,
-		page: &mut Page<C, WIDGET_COUNT, N>,
+		page: &mut Page<C, A, WIDGET_COUNT, N>,
 	) -> Result<Rectangle, Error> {
 		let y0 = strip_count * STRIP_H;
 		let strip_rect = Rectangle::new(

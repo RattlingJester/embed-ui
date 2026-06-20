@@ -4,6 +4,7 @@ use heapless::spsc::Queue;
 
 use crate::{
 	Error,
+	alloc::Allocator,
 	input::{Event, Interaction},
 	page::Page,
 	painter::Painter,
@@ -16,10 +17,11 @@ pub struct Ui<
 	const WIDGET_COUNT: usize,
 	const PAGE_COUNT: usize,
 	const FB_SIZE: usize,
+	A: Allocator + 'static,
 	C: PixelColor,
 	P: Painter,
 > {
-	pages:               [Page<'a, C, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
+	pages:               [Page<'a, C, A, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
 	events:              Queue<Event, WIDGET_COUNT>,
 	pub painter:         P,
 	pub active_page_idx: u8,
@@ -32,12 +34,13 @@ impl<
 	const WIDGET_COUNT: usize,
 	const PAGE_COUNT: usize,
 	const FB_SIZE: usize,
+	A: Allocator + 'static,
 	C: PixelColor,
 	P: Painter,
-> Ui<'a, WIDGET_COUNT, PAGE_COUNT, FB_SIZE, C, P>
+> Ui<'a, WIDGET_COUNT, PAGE_COUNT, FB_SIZE, A, C, P>
 {
 	pub const fn new(
-		pages: [Page<'a, C, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
+		pages: [Page<'a, C, A, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
 		painter: P,
 		style: Style<C>,
 	) -> Self {
@@ -82,12 +85,12 @@ impl<
 	}
 
 	/// Retrieves the currently active page immutably
-	pub fn current_page(&self) -> &Page<'a, C, WIDGET_COUNT, FB_SIZE> {
+	pub fn current_page(&self) -> &Page<'a, C, A, WIDGET_COUNT, FB_SIZE> {
 		&self.pages[self.active_page_idx as usize]
 	}
 
 	/// Retrieves the currently active page mutably
-	pub fn current_page_mut(&mut self) -> &mut Page<'a, C, WIDGET_COUNT, FB_SIZE> {
+	pub fn current_page_mut(&mut self) -> &mut Page<'a, C, A, WIDGET_COUNT, FB_SIZE> {
 		&mut self.pages[self.active_page_idx as usize]
 	}
 
@@ -191,11 +194,11 @@ impl<
 	// 	}
 	// }
 
-	pub fn get_page(&self, idx: u8) -> &Page<'a, C, WIDGET_COUNT, FB_SIZE> {
+	pub fn get_page(&self, idx: u8) -> &Page<'a, C, A, WIDGET_COUNT, FB_SIZE> {
 		&self.pages[idx as usize]
 	}
 
-	pub fn get_page_mut(&mut self, idx: u8) -> &mut Page<'a, C, WIDGET_COUNT, FB_SIZE> {
+	pub fn get_page_mut(&mut self, idx: u8) -> &mut Page<'a, C, A, WIDGET_COUNT, FB_SIZE> {
 		&mut self.pages[idx as usize]
 	}
 

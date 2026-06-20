@@ -8,7 +8,7 @@ use embedded_graphics_simulator::{
 };
 
 use embed_ui::{
-	DrawTarget, PixelColor, Rgb666, RgbColor,
+	DrawTarget, Rgb666, RgbColor,
 	alloc::{Allocator, Arena},
 	input::Interaction,
 	page::{Align, HorizontalAlign, Page, VerticalAlign, WidgetId},
@@ -37,10 +37,10 @@ pub struct UiState {
 	pub step_idx:      usize,
 }
 
-static mut ARENA: Arena<4096> = Arena::new();
+static mut ARENA: Arena<3072> = Arena::new();
 
 fn main() {
-	let (page_main, main_elements) = build_main_page::<_, 30, _>().unwrap();
+	let (page_main, main_elements) = build_main_page::<_, 30, _>(unsafe { &mut ARENA }).unwrap();
 
 	let ui_state = UiState {
 		focused_joint: 0,
@@ -271,9 +271,11 @@ pub struct MainElements {
 	pub btn_reset:       WidgetId,
 }
 
-pub fn build_main_page<C: PixelColor, const W: usize, const F: usize>()
--> Result<(Page<'static, C, W, F>, MainElements), embed_ui::Error> {
+pub fn build_main_page<A: Allocator + 'static, const W: usize, const F: usize>(
+	alloc: &'static mut A,
+) -> Result<(Page<'static, Rgb666, A, W, F>, MainElements), embed_ui::Error> {
 	let mut page = Page::new(
+		alloc,
 		Size::new(SCREEN_W as u32, SCREEN_H as u32),
 		true,
 		Align {
@@ -282,87 +284,84 @@ pub fn build_main_page<C: PixelColor, const W: usize, const F: usize>()
 		},
 	);
 
-	let arena = unsafe { &mut ARENA };
-
-	let btn_left = page.insert(arena.alloc(Button::new(
+	let btn_left = page.insert(Button::new(
 		"<",
 		&PROFONT_24_POINT,
 		Size::new(50, 50),
 		false,
-	)?))?;
-	let btn_menu = page.insert(arena.alloc(Button::new(
+	)?)?;
+	let btn_menu = page.insert(Button::new(
 		"Joint jog",
 		&PROFONT_24_POINT,
 		Size::new(220, 50),
 		false,
-	)?))?;
-	let btn_right = page.insert(arena.alloc(Button::new(
+	)?)?;
+	let btn_right = page.insert(Button::new(
 		">",
 		&PROFONT_24_POINT,
 		Size::new(50, 50),
 		false,
-	)?))?;
+	)?)?;
 
 	let mut joint_textboxes = [WidgetId::default(); 6];
 	let mut joint_zeros = [WidgetId::default(); 6];
 	for row in 0..6 {
 		let text: heapless::String<10> = heapless::format!("J{}", row + 1).unwrap_or_default();
-		let _ =
-			page.insert(arena.alloc(Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?))?;
+		let _ = page.insert(Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?)?;
 
-		let textbox_id = page.insert(arena.alloc(Button::new(
+		let textbox_id = page.insert(Button::new(
 			"0.000",
 			&PROFONT_24_POINT,
 			Size::new(220, 50),
 			true,
-		)?))?;
+		)?)?;
 		joint_textboxes[row] = textbox_id;
 
-		let zero_id = page.insert(arena.alloc(Button::new(
+		let zero_id = page.insert(Button::new(
 			"<0>",
 			&PROFONT_18_POINT,
 			Size::new(50, 50),
 			false,
-		)?))?;
+		)?)?;
 		joint_zeros[row] = zero_id;
 	}
 
 	let mut steps_radio = [WidgetId::default(); 4];
 	for row in 0..4 {
-		let radio_id = page.insert(arena.alloc(RadioButton::new(
+		let radio_id = page.insert(RadioButton::new(
 			STEPS_STR[row],
 			&PROFONT_24_POINT,
 			Size::new(80, 50),
 			false,
-		)?))?;
+		)?)?;
 		steps_radio[row] = radio_id;
 	}
 
-	let status_textbox = page.insert(arena.alloc(Textbox::new(
+	let status_textbox = page.insert(Textbox::new(
 		"DISCONNECTED",
 		&PROFONT_18_POINT,
 		Size::new(240, 30),
 		false,
-	)?))?;
-	let mode_textbox = page.insert(arena.alloc(Textbox::new(
+	)?)?;
+	let mode_textbox = page.insert(Textbox::new(
 		"JOG",
 		&PROFONT_18_POINT,
 		Size::new(80, 30),
 		false,
-	)?))?;
+	)?)?;
 
-	let btn_run = page.insert(arena.alloc(Button::new(
+	let btn_run = page.insert(Button::new(
 		"RUN",
 		&PROFONT_18_POINT,
 		Size::new(160, 50),
 		false,
-	)?))?;
-	let btn_reset = page.insert(arena.alloc(Button::new(
+	)?)?;
+	let btn_reset = page.insert(Button::new(
 		"RESET",
 		&PROFONT_18_POINT,
 		Size::new(160, 50),
 		false,
-	)?))?;
+	)?)?;
 
 	Ok((
 		page,

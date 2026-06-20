@@ -6,6 +6,7 @@ use heapless::spsc::Queue;
 
 use crate::{
 	Error,
+	alloc::Allocator,
 	input::{Event, Interaction},
 	widgets::Widget,
 };
@@ -14,15 +15,24 @@ pub type WidgetId = usize;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 // #[derive(Debug)]
-pub struct Page<'a, C: PixelColor, const WIDGET_COUNT: usize, const FB_SIZE: usize> {
+pub struct Page<
+	'a,
+	C: PixelColor,
+	A: Allocator + 'static,
+	const WIDGET_COUNT: usize,
+	const FB_SIZE: usize,
+> {
 	pub(crate) widgets: [Option<(&'a mut dyn Widget<C, FB_SIZE>, Rectangle)>; WIDGET_COUNT],
 	pub(crate) count:   usize,
 	focus_idx:          WidgetId,
 	layout:             Layout,
+	allocator:          &'static mut A,
 }
 
-impl<'a, C: PixelColor, const S: usize, const FB_SIZE: usize> Page<'a, C, S, FB_SIZE> {
-	pub const fn new(size: Size, wrap: bool, align: Align) -> Self {
+impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
+	Page<'a, C, A, S, FB_SIZE>
+{
+	pub const fn new(allocator: &'static mut A, size: Size, wrap: bool, align: Align) -> Self {
 		let layout = Layout::new(size, wrap, align);
 
 		Self {
@@ -30,6 +40,7 @@ impl<'a, C: PixelColor, const S: usize, const FB_SIZE: usize> Page<'a, C, S, FB_
 			count: 0,
 			focus_idx: 0,
 			layout,
+			allocator,
 		}
 	}
 
@@ -199,18 +210,25 @@ impl<'a, C: PixelColor, const S: usize, const FB_SIZE: usize> Page<'a, C, S, FB_
 			})
 	}
 
-	pub fn insert<W: Widget<C, FB_SIZE>>(&mut self, widget: &'a mut W) -> Result<WidgetId, Error> {
-		let rect = self.layout.next(widget.size())?;
+	pub fn insert<W: Widget<C, FB_SIZE> + 'static>(
+		&mut self,
+		widget: W,
+	) -> Result<WidgetId, Error> {
+		unsafe {
+			let widget_ptr = self.allocator.alloc(widget);
 
-		let id = self.count;
-		self.widgets[id] = Some((widget, rect));
-		self.count += 1;
+			let rect = self.layout.next(widget_ptr.size())?;
 
-		if self.count == 1 {
-			self.focus_set(0); // first widget gets focus
+			let id = self.count;
+			self.widgets[id] = Some((widget_ptr, rect));
+			self.count += 1;
+
+			if self.count == 1 {
+				self.focus_set(0); // first widget gets focus
+			}
+
+			Ok(id)
 		}
-
-		Ok(id)
 	}
 
 	pub fn insert_next_row<W: Widget<C, FB_SIZE>>(
