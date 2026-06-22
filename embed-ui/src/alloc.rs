@@ -1,11 +1,11 @@
-pub trait Allocator {
-	unsafe fn alloc<T>(&mut self, value: T) -> &'static mut T;
+pub trait Allocator<'m> {
+	fn alloc<'s, T>(&'s mut self, value: T) -> &'m mut T;
 }
 
 #[derive(Debug)]
 pub struct Arena<const N: usize> {
-	buffer: [u8; N],
-	offset: usize,
+	pub buffer: [u8; N],
+	pub offset: usize,
 }
 
 impl<const N: usize> Arena<N> {
@@ -17,14 +17,14 @@ impl<const N: usize> Arena<N> {
 	}
 }
 
-impl<const N: usize> Allocator for Arena<N> {
-	unsafe fn alloc<T>(&mut self, value: T) -> &'static mut T {
+impl<'m, const N: usize> Allocator<'m> for Arena<N> {
+	fn alloc<'s, T>(&'s mut self, value: T) -> &'m mut T {
 		let size = core::mem::size_of::<T>();
 		let align = core::mem::align_of::<T>();
 
 		let aligned_offset = (self.offset + align - 1) & !(align - 1);
 		if aligned_offset + size > N {
-			panic!("Out of UI Arena Memory!");
+			panic!("Arena out of memory");
 		}
 
 		unsafe {

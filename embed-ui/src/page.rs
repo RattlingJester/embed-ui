@@ -14,11 +14,10 @@ use crate::{
 pub type WidgetId = usize;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// #[derive(Debug)]
 pub struct Page<
 	'a,
 	C: PixelColor,
-	A: Allocator + 'static,
+	A: Allocator<'a>,
 	const WIDGET_COUNT: usize,
 	const FB_SIZE: usize,
 > {
@@ -26,13 +25,13 @@ pub struct Page<
 	pub(crate) count:   usize,
 	focus_idx:          WidgetId,
 	layout:             Layout,
-	allocator:          &'static mut A,
+	allocator:          &'a mut A,
 }
 
-impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
+impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 	Page<'a, C, A, S, FB_SIZE>
 {
-	pub const fn new(allocator: &'static mut A, size: Size, wrap: bool, align: Align) -> Self {
+	pub const fn new(allocator: &'a mut A, size: Size, wrap: bool, align: Align) -> Self {
 		let layout = Layout::new(size, wrap, align);
 
 		Self {
@@ -44,9 +43,8 @@ impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
 		}
 	}
 
-	/// Returns a bitmask of strips that contain at least one dirty widget.
+	/// Returns a bitmask of strips
 	/// Bit N is set if strip N needs repainting.
-	/// Pass STRIP_COUNT as a const generic to cap the bit width.
 	pub fn dirty_strip_mask(&self, strip_h: usize, strip_count: usize) -> u32 {
 		let mut mask = 0u32;
 		for entry in self.widgets[..self.count].iter().flatten() {
@@ -93,7 +91,7 @@ impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
 		}
 	}
 
-	pub fn focused(&self) -> WidgetId {
+	pub const fn focused(&self) -> WidgetId {
 		self.focus_idx
 	}
 
@@ -215,25 +213,20 @@ impl<'a, C: PixelColor, A: Allocator, const S: usize, const FB_SIZE: usize>
 			})
 	}
 
-	pub fn insert<W: Widget<C, FB_SIZE> + 'static>(
-		&mut self,
-		widget: W,
-	) -> Result<WidgetId, Error> {
-		unsafe {
-			let widget_ptr = self.allocator.alloc(widget);
+	pub fn insert<W: Widget<C, FB_SIZE> + 'a>(&mut self, widget: W) -> Result<WidgetId, Error> {
+		let widget_ptr = self.allocator.alloc(widget);
 
-			let rect = self.layout.next(widget_ptr.size())?;
+		let rect = self.layout.next((*widget_ptr).size())?;
 
-			let id = self.count;
-			self.widgets[id] = Some((widget_ptr, rect));
-			self.count += 1;
+		let id = self.count;
+		self.widgets[id] = Some((widget_ptr, rect));
+		self.count += 1;
 
-			if self.count == 1 {
-				self.focus_set(0); // first widget gets focus
-			}
-
-			Ok(id)
+		if self.count == 1 {
+			self.focus_set(0); // first widget gets focus
 		}
+
+		Ok(id)
 	}
 
 	pub fn insert_next_row<W: Widget<C, FB_SIZE>>(

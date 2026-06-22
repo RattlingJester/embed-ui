@@ -17,9 +17,9 @@ pub struct Ui<
 	const WIDGET_COUNT: usize,
 	const PAGE_COUNT: usize,
 	const FB_SIZE: usize,
-	A: Allocator + 'static,
+	A: Allocator<'a>,
 	C: PixelColor,
-	P: Painter,
+	P: Painter<'a>,
 > {
 	pages:               [Page<'a, C, A, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
 	events:              Queue<Event, WIDGET_COUNT>,
@@ -34,9 +34,9 @@ impl<
 	const WIDGET_COUNT: usize,
 	const PAGE_COUNT: usize,
 	const FB_SIZE: usize,
-	A: Allocator + 'static,
+	A: Allocator<'a>,
 	C: PixelColor,
-	P: Painter,
+	P: Painter<'a>,
 > Ui<'a, WIDGET_COUNT, PAGE_COUNT, FB_SIZE, A, C, P>
 {
 	pub const fn new(
