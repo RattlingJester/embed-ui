@@ -34,7 +34,7 @@ pub struct UiState {
 	pub step_idx:      usize,
 }
 
-static ARENA: ConstStaticCell<Arena<3072>> = ConstStaticCell::new(Arena::new());
+static ARENA: ConstStaticCell<Arena<2048>> = ConstStaticCell::new(Arena::new());
 static FRAMEBUF: ConstStaticCell<[Rgb666; STRIP_PIXEL_COUNT]> =
 	ConstStaticCell::new([Rgb666::WHITE; STRIP_PIXEL_COUNT]);
 
@@ -269,9 +269,9 @@ pub struct MainElements {
 	pub btn_reset:       WidgetId,
 }
 
-pub fn build_main_page<A: Allocator + 'static, const W: usize, const F: usize>(
-	alloc: &'static mut A,
-) -> Result<(Page<'static, Rgb666, A, W, F>, MainElements), embed_ui::Error> {
+pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
+	alloc: &'a mut A,
+) -> Result<(Page<'a, Rgb666, A, W, F>, MainElements), embed_ui::Error> {
 	let mut page = Page::new(
 		alloc,
 		Size::new(SCREEN_W as u32, SCREEN_H as u32),
@@ -379,14 +379,15 @@ pub fn build_main_page<A: Allocator + 'static, const W: usize, const F: usize>(
 }
 
 fn update_joint_angle<
+	'a,
 	const W: usize,
 	const PAGES: usize,
 	const FB_SIZE: usize,
-	A: Allocator + 'static,
+	A: Allocator<'a>,
 	C: PixelColor,
-	P: Painter,
+	P: Painter<'a>,
 >(
-	ui: &mut Ui<W, PAGES, FB_SIZE, A, C, P>,
+	ui: &mut Ui<'a, W, PAGES, FB_SIZE, A, C, P>,
 	elements: &MainElements,
 	kin_state: &KinematicState,
 	joint_idx: usize,
