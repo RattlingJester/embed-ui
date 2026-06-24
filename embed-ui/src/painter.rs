@@ -1,43 +1,56 @@
+use core::marker::PhantomData;
+
 use embedded_graphics::{
-	prelude::{DrawTarget, PixelColor, Point, Size},
+	prelude::{DrawTarget, DrawTargetExt, PixelColor, Point, Size},
 	primitives::Rectangle,
 };
 use embedded_graphics_framebuf::FrameBuf;
 
-use crate::{Error, alloc::Allocator, page::Page, style::Style};
+use crate::{Error, page::Page, style::Style, widgets::Widget};
 
-pub trait Painter<'a> {
-	fn paint<A: Allocator<'a>, C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
+pub trait Painter<C: PixelColor> {
+	fn paint<const WIDGET_COUNT: usize, const N: usize>(
 		&mut self,
 		strip_count: usize,
 		style: &Style<C>,
-		buffer: &mut FrameBuf<C, [C; N]>,
-		page: &mut Page<'a, C, A, WIDGET_COUNT, N>,
+		buffer: &mut [C; N],
+		page: &mut Page<WIDGET_COUNT>,
 	) -> Result<Rectangle, Error>;
 }
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug)]
-pub struct SplitPainter<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize> {}
+pub struct SplitPainter<
+	const STRIP_COUNT: usize,
+	const STRIP_W: usize,
+	const STRIP_H: usize,
+	C: PixelColor,
+> {
+	// pub buffer: BUF,
+	_phantom: PhantomData<C>,
+}
 
-impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize>
-	SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H>
+impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize, C: PixelColor>
+	SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H, C>
 {
 	#[allow(clippy::new_without_default)]
 	pub const fn new() -> Self {
-		Self {}
+		Self {
+			// buffer,
+			_phantom: PhantomData,
+		}
 	}
 }
 
-impl<'a, const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize> Painter<'a>
-	for SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H>
+impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize, C: PixelColor> Painter<C>
+	for SplitPainter<STRIP_COUNT, STRIP_W, STRIP_H, C>
 {
-	fn paint<A: Allocator<'a>, C: PixelColor, const WIDGET_COUNT: usize, const N: usize>(
+	fn paint<const WIDGET_COUNT: usize, const N: usize>(
 		&mut self,
 		strip_count: usize,
 		style: &Style<C>,
-		buffer: &mut FrameBuf<C, [C; N]>,
-		page: &mut Page<'a, C, A, WIDGET_COUNT, N>,
+		buffer: &mut [C; N],
+		page: &mut Page<WIDGET_COUNT>,
 	) -> Result<Rectangle, Error> {
 		let y0 = strip_count * STRIP_H;
 		let strip_rect = Rectangle::new(
@@ -45,14 +58,15 @@ impl<'a, const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize> P
 			Size::new(STRIP_W as u32, STRIP_H as u32),
 		);
 
-		buffer.clear(style.screen_bg);
+		let mut buf = FrameBuf::new(buffer, STRIP_W, STRIP_H);
+
+		buf.clear(style.screen_bg);
+
+		let mut translated = buf.translated(Point::new(0, -strip_rect.top_left.y));
 
 		for (widget, rect) in page.widgets[..page.count].iter_mut().flatten() {
 			if !rect.intersection(&strip_rect).is_zero_sized() {
-				let mut shifted_rect = *rect;
-				shifted_rect.top_left.y -= y0 as i32;
-
-				widget.draw(style, &shifted_rect, buffer)?;
+				widget.draw(style, rect, &mut translated);
 			}
 		}
 

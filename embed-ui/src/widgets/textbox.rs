@@ -3,12 +3,11 @@ use core::str::FromStr;
 use embedded_graphics::{
 	Drawable,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{PixelColor, Point, Size},
+	prelude::{DrawTarget, Point, Size},
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 
-use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -44,15 +43,23 @@ impl Textbox {
 			changed: true,
 		})
 	}
+
+	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
 }
 
-impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
-	fn draw(
+impl Widget for Textbox {
+	fn draw<D: DrawTarget>(
 		&mut self,
-		style: &Style<C>,
+		style: &Style<D::Color>,
 		rect: &Rectangle,
-		target: &mut FrameBuf<C, [C; F]>,
-	) -> Result<(), Error> {
+		target: &mut D,
+	) -> Result<(), D::Error> {
 		let border_color = match self.focus {
 			true => style.focus_color,
 			false => style.border_color,
@@ -89,14 +96,6 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
 		Ok(())
 	}
 
-	fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
 	fn set_focus(&mut self, focus: bool) {
 		if self.focus != focus && self.focusable {
 			self.changed = true;
@@ -120,7 +119,7 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
 		self.size
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 }

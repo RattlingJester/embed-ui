@@ -1,10 +1,9 @@
 use embedded_graphics::{
-	prelude::{PixelColor, Size},
+	prelude::{DrawTarget, Size},
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 };
-use embedded_graphics_framebuf::FrameBuf;
 
-use crate::{Error, style::Style, widgets::Widget};
+use crate::{style::Style, widgets::Widget};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq)]
@@ -22,13 +21,13 @@ impl Separator {
 	}
 }
 
-impl<C: PixelColor, const F: usize> Widget<C, F> for Separator {
-	fn draw(
+impl Widget for Separator {
+	fn draw<D: DrawTarget>(
 		&mut self,
-		style: &Style<C>,
+		style: &Style<D::Color>,
 		rect: &Rectangle,
-		target: &mut FrameBuf<C, [C; F]>,
-	) -> Result<(), Error> {
+		target: &mut D,
+	) -> Result<(), D::Error> {
 		let style = PrimitiveStyleBuilder::new()
 			.fill_color(style.border_color)
 			.stroke_color(style.screen_bg)
@@ -48,7 +47,7 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Separator {
 		self.size
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
 	}
 }

@@ -1,37 +1,28 @@
 use embedded_graphics::{
-	prelude::{PixelColor, Point, Size},
+	prelude::{Point, Size},
 	primitives::Rectangle,
 };
 use heapless::spsc::Queue;
 
 use crate::{
 	Error,
-	alloc::Allocator,
 	input::{Event, Interaction},
-	widgets::Widget,
+	widgets::{Widget, WidgetKind},
 };
 
 pub type WidgetId = usize;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Page<
-	'a,
-	C: PixelColor,
-	A: Allocator<'a>,
-	const WIDGET_COUNT: usize,
-	const FB_SIZE: usize,
-> {
-	pub(crate) widgets: [Option<(&'a mut dyn Widget<C, FB_SIZE>, Rectangle)>; WIDGET_COUNT],
+#[derive(Debug)]
+pub struct Page<const WIDGET_COUNT: usize> {
+	pub(crate) widgets: [Option<(WidgetKind, Rectangle)>; WIDGET_COUNT],
 	pub(crate) count:   usize,
 	focus_idx:          WidgetId,
 	layout:             Layout,
-	allocator:          &'a mut A,
 }
 
-impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
-	Page<'a, C, A, S, FB_SIZE>
-{
-	pub const fn new(allocator: &'a mut A, size: Size, wrap: bool, align: Align) -> Self {
+impl<const S: usize> Page<S> {
+	pub const fn new(size: Size, wrap: bool, align: Align) -> Self {
 		let layout = Layout::new(size, wrap, align);
 
 		Self {
@@ -39,17 +30,17 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 			count: 0,
 			focus_idx: 0,
 			layout,
-			allocator,
 		}
 	}
 
-	/// Returns a bitmask of strips
+	/// Returns a bitmask of strips that contain at least one dirty widget.
 	/// Bit N is set if strip N needs repainting.
+	/// Pass STRIP_COUNT as a const generic to cap the bit width.
 	pub fn dirty_strip_mask(&self, strip_h: usize, strip_count: usize) -> u32 {
 		let mut mask = 0u32;
 		for entry in self.widgets[..self.count].iter().flatten() {
 			let (widget, rect) = entry;
-			if widget.is_changed() {
+			if widget.is_dirty() {
 				let y0 = rect.top_left.y.max(0) as usize;
 				let y1 = (y0 + rect.size.height as usize).saturating_sub(1);
 				let first = y0 / strip_h;
@@ -62,10 +53,10 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 		mask
 	}
 
-	pub fn process<const E: usize>(
+	pub fn process<const N: usize>(
 		&mut self,
 		interaction: Option<Interaction>,
-		events: &mut Queue<Event, E>,
+		events: &mut Queue<Event, N>,
 		page_idx: u8,
 	) {
 		for (widget_id, (widget, rect)) in
@@ -75,23 +66,35 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 				.map(|i| rect.contains(i.point()))
 				.unwrap_or(false);
 
-			unsafe {
-				if is_hit {
-					widget.interact(interaction);
-					if widget.is_changed() {
-						events.enqueue_unchecked(Event {
-							page_idx,
-							widget_id,
-						});
-					}
-				} else {
-					widget.interact(None);
-				}
+			if is_hit || widget.is_pressed() {
+				widget.interact(interaction);
+			}
+
+			match widget {
+				WidgetKind::Button(b) if b.is_clicked() => unsafe {
+					events.enqueue_unchecked(Event::ButtonClicked {
+						page_idx,
+						widget_id,
+					})
+				},
+				WidgetKind::RadioButton(b) if b.is_clicked() => unsafe {
+					events.enqueue_unchecked(Event::RadioButtonToggled {
+						page_idx,
+						widget_id,
+					})
+				},
+				WidgetKind::Checkbox(c) if c.is_checked() => unsafe {
+					events.enqueue_unchecked(Event::CheckboxToggled {
+						page_idx,
+						widget_id,
+					})
+				},
+				_ => (),
 			}
 		}
 	}
 
-	pub const fn focused(&self) -> WidgetId {
+	pub fn focused(&self) -> WidgetId {
 		self.focus_idx
 	}
 
@@ -169,57 +172,33 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 		true
 	}
 
-	pub fn get(&self, index: WidgetId) -> Option<(&dyn Widget<C, FB_SIZE>, &Rectangle)> {
+	pub fn get(&self, index: WidgetId) -> Option<(&WidgetKind, &Rectangle)> {
 		self.widgets
 			.get(index)
 			.and_then(|opt| opt.as_ref())
-			.map(|(widget, rect)| (&**widget, rect))
+			.map(|(widget, rect)| (widget, rect))
 	}
 
-	pub fn get_mut(
-		&mut self,
-		index: WidgetId,
-	) -> Option<(&mut dyn Widget<C, FB_SIZE>, &mut Rectangle)> {
-		match self.widgets.get_mut(index) {
-			Some(Some((widget, rect))) => Some((&mut **widget, rect)),
-			_ => None,
-		}
+	pub fn get_mut(&mut self, index: WidgetId) -> Option<(&mut WidgetKind, &mut Rectangle)> {
+		self.widgets
+			.get_mut(index)
+			.and_then(|opt| opt.as_mut())
+			.map(|(widget, rect)| (widget, rect))
 	}
 
-	pub fn iter(&self) -> impl Iterator<Item = (&dyn Widget<C, FB_SIZE>, &Rectangle)> {
-		self.widgets[..self.count]
-			.iter()
-			.flatten()
-			.map(|(widget, rect)| (&**widget, rect))
+	pub fn iter(&self) -> impl Iterator<Item = &(WidgetKind, Rectangle)> {
+		self.widgets[..self.count].iter().flatten()
 	}
 
-	pub fn iter_mut(
-		&mut self,
-	) -> impl Iterator<Item = (&mut dyn Widget<C, FB_SIZE>, &mut Rectangle)> {
-		self.widgets[..self.count]
-			.iter_mut()
-			.filter_map(|slot| match slot {
-				Some((widget, rect)) => {
-					let raw_fat_ptr = widget as *mut &'a mut dyn Widget<C, FB_SIZE>
-						as *mut *mut dyn Widget<C, FB_SIZE>;
-
-					unsafe {
-						let widget_short_ref: &mut (dyn Widget<C, FB_SIZE> + '_) =
-							&mut **raw_fat_ptr;
-						Some((widget_short_ref, rect))
-					}
-				}
-				None => None,
-			})
+	pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut (WidgetKind, Rectangle)> {
+		self.widgets[..self.count].iter_mut().flatten()
 	}
 
-	pub fn insert<W: Widget<C, FB_SIZE> + 'a>(&mut self, widget: W) -> Result<WidgetId, Error> {
-		let widget_ref = self.allocator.alloc(widget);
-
-		let rect = self.layout.next((*widget_ref).size())?;
+	pub fn insert(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
+		let rect = self.layout.next(widget.size())?;
 
 		let id = self.count;
-		self.widgets[id] = Some((widget_ref, rect));
+		self.widgets[id] = Some((widget, rect));
 		self.count += 1;
 
 		if self.count == 1 {
@@ -229,10 +208,7 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 		Ok(id)
 	}
 
-	pub fn insert_next_row<W: Widget<C, FB_SIZE>>(
-		&mut self,
-		widget: &'a mut W,
-	) -> Result<WidgetId, Error> {
+	pub fn insert_next_row(&mut self, widget: WidgetKind) -> Result<WidgetId, Error> {
 		let rect = self.layout.next_row(widget.size())?;
 
 		let id = self.count;

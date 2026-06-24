@@ -3,11 +3,10 @@ use core::str::FromStr;
 use embedded_graphics::{
 	Drawable,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{PixelColor, Point, Primitive, Size},
+	prelude::{DrawTarget, Point, Primitive, Size},
 	primitives::{Line, PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
-use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -48,14 +47,33 @@ impl RadioButton {
 			toggled: false,
 		})
 	}
+
+	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
+
+	pub fn set_toggle(&mut self, toggle: bool) {
+		if self.toggled != toggle {
+			self.toggled = toggle;
+			self.changed = true;
+		}
+	}
+
+	pub fn is_clicked(&self) -> bool {
+		self.pressed
+	}
 }
-impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
-	fn draw(
+impl Widget for RadioButton {
+	fn draw<D: DrawTarget>(
 		&mut self,
-		style: &Style<C>,
+		style: &Style<D::Color>,
 		rect: &Rectangle,
-		target: &mut FrameBuf<C, [C; F]>,
-	) -> Result<(), Error> {
+		target: &mut D,
+	) -> Result<(), D::Error> {
 		let bg = if self.pressed {
 			style.active_color
 		} else {
@@ -113,34 +131,16 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 	}
 
 	fn interact(&mut self, interaction: Option<Interaction>) {
-		match interaction {
-			Some(Interaction::Click(_)) if !self.pressed => {
-				self.pressed = true;
-				self.changed = true;
-			}
-			Some(Interaction::Release(_)) if self.pressed => {
-				self.pressed = false;
-				self.changed = true;
-			}
-			None if self.pressed => {
-				self.pressed = false;
-				self.changed = true;
-			}
-			_ => (),
+		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
+		let released = matches!(interaction, Some(Interaction::Release(_)));
+
+		if released && self.pressed {
+			self.pressed = false;
+			self.changed = true;
 		}
-	}
 
-	fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
-	fn set_active(&mut self, active: bool) {
-		if self.toggled != active {
-			self.toggled = active;
+		if new_pressed != self.pressed {
+			self.pressed = new_pressed;
 			self.changed = true;
 		}
 	}
@@ -164,15 +164,15 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for RadioButton {
 		self.size
 	}
 
+	fn is_pressed(&self) -> bool {
+		self.pressed
+	}
+
 	fn is_focusable(&self) -> bool {
 		self.focusable
 	}
 
-	fn is_changed(&self) -> bool {
+	fn is_dirty(&self) -> bool {
 		self.changed
-	}
-
-	fn is_pressed(&self) -> bool {
-		self.pressed
 	}
 }
