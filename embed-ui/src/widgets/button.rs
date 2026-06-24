@@ -6,6 +6,7 @@ use embedded_graphics::{
 	primitives::{PrimitiveStyleBuilder, Rectangle},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -44,27 +45,15 @@ impl Button {
 			pressed: false,
 		})
 	}
-
-	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
-
-	pub fn is_clicked(&self) -> bool {
-		self.pressed
-	}
 }
 
-impl Widget for Button {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for Button {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let bg = if self.pressed {
 			style.active_color
 		} else {
@@ -106,18 +95,29 @@ impl Widget for Button {
 	}
 
 	fn interact(&mut self, interaction: Option<Interaction>) {
-		let new_pressed = matches!(interaction, Some(Interaction::Click(_)));
-		let released = matches!(interaction, Some(Interaction::Release(_)));
-
-		if released && self.pressed {
-			self.pressed = false;
-			self.changed = true;
+		match interaction {
+			Some(Interaction::Click(_)) if !self.pressed => {
+				self.pressed = true;
+				self.changed = true;
+			}
+			Some(Interaction::Release(_)) if self.pressed => {
+				self.pressed = false;
+				self.changed = true;
+			}
+			None if self.pressed => {
+				self.pressed = false;
+				self.changed = true;
+			}
+			_ => (),
 		}
+	}
 
-		if new_pressed != self.pressed {
-			self.pressed = new_pressed;
-			self.changed = true;
-		}
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
 	}
 
 	fn mark_clean(&mut self) {
@@ -147,7 +147,7 @@ impl Widget for Button {
 		self.focusable
 	}
 
-	fn is_dirty(&self) -> bool {
+	fn is_changed(&self) -> bool {
 		self.changed
 	}
 }

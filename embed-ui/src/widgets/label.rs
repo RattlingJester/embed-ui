@@ -1,12 +1,14 @@
 use core::str::FromStr;
 
 use embedded_graphics::{
+	Drawable,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{DrawTarget, *},
+	prelude::{PixelColor, Point, Size},
 	primitives::Rectangle,
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
 
+use embedded_graphics_framebuf::FrameBuf;
 use heapless::String;
 
 use crate::{
@@ -33,23 +35,15 @@ impl Label {
 			changed: true,
 		})
 	}
-
-	pub fn set_text(&mut self, text: &str) -> Result<(), Error> {
-		self.text.clear();
-		self.text.push_str(text)?;
-		self.changed = true;
-
-		Ok(())
-	}
 }
 
-impl Widget for Label {
-	fn draw<D: DrawTarget>(
+impl<C: PixelColor, const F: usize> Widget<C, F> for Label {
+	fn draw(
 		&mut self,
-		style: &Style<D::Color>,
+		style: &Style<C>,
 		rect: &Rectangle,
-		target: &mut D,
-	) -> Result<(), D::Error> {
+		target: &mut FrameBuf<C, [C; F]>,
+	) -> Result<(), Error> {
 		let char_style = MonoTextStyle::new(self.font, style.text_color);
 		let text_style = TextStyleBuilder::new()
 			.baseline(Baseline::Middle)
@@ -65,6 +59,14 @@ impl Widget for Label {
 		Ok(())
 	}
 
+	fn set_text(&mut self, text: &str) -> Result<(), Error> {
+		self.text.clear();
+		self.text.push_str(text)?;
+		self.changed = true;
+
+		Ok(())
+	}
+
 	fn mark_clean(&mut self) {
 		self.changed = false;
 	}
@@ -73,7 +75,15 @@ impl Widget for Label {
 		self.size
 	}
 
-	fn is_dirty(&self) -> bool {
+	fn is_changed(&self) -> bool {
 		self.changed
+	}
+
+	fn set_focus(&mut self, _focus: bool) {}
+
+	fn set_focusable(&mut self, _focusable: bool) {}
+
+	fn is_focusable(&self) -> bool {
+		false
 	}
 }
