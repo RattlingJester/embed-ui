@@ -214,12 +214,12 @@ impl<'a, C: PixelColor, A: Allocator<'a>, const S: usize, const FB_SIZE: usize>
 	}
 
 	pub fn insert<W: Widget<C, FB_SIZE> + 'a>(&mut self, widget: W) -> Result<WidgetId, Error> {
-		let widget_ptr = self.allocator.alloc(widget);
+		let widget_ref = self.allocator.alloc(widget);
 
-		let rect = self.layout.next((*widget_ptr).size())?;
+		let rect = self.layout.next((*widget_ref).size())?;
 
 		let id = self.count;
-		self.widgets[id] = Some((widget_ptr, rect));
+		self.widgets[id] = Some((widget_ref, rect));
 		self.count += 1;
 
 		if self.count == 1 {
