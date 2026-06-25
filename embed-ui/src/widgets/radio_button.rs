@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct RadioButton {
 	text:      String<MAX_TEXT_LEN>,
 	font:      &'static MonoFont<'static>,

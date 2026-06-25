@@ -11,7 +11,10 @@ use embed_ui::{
 	painter::{Painter, SplitPainter},
 	style::DEFAULT_STYLE_666,
 	ui::Ui,
-	widgets::{button::Button, label::Label, radio_button::RadioButton, textbox::Textbox},
+	widgets::{
+		Horizontal, TextAlignment, Vertical, button::Button, label::Label,
+		radio_button::RadioButton, textbox::Textbox,
+	},
 };
 use profont::{PROFONT_18_POINT, PROFONT_24_POINT};
 
@@ -285,18 +288,30 @@ pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
 	let btn_left = page.insert(Button::new(
 		"<",
 		&PROFONT_24_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(50, 50),
 		false,
 	)?)?;
 	let btn_menu = page.insert(Button::new(
 		"Joint jog",
 		&PROFONT_24_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(220, 50),
 		false,
 	)?)?;
 	let btn_right = page.insert(Button::new(
 		">",
 		&PROFONT_24_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(50, 50),
 		false,
 	)?)?;
@@ -305,11 +320,23 @@ pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
 	let mut joint_zeros = [WidgetId::default(); 6];
 	for row in 0..6 {
 		let text: heapless::String<10> = heapless::format!("J{}", row + 1).unwrap_or_default();
-		let _ = page.insert(Label::new(&text, &PROFONT_24_POINT, Size::new(50, 50))?)?;
+		let _ = page.insert(Label::new(
+			&text,
+			&PROFONT_24_POINT,
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical:   Vertical::Center,
+			},
+			Size::new(50, 50),
+		)?)?;
 
 		let textbox_id = page.insert(Button::new(
 			"0.000",
 			&PROFONT_24_POINT,
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical:   Vertical::Center,
+			},
 			Size::new(220, 50),
 			true,
 		)?)?;
@@ -318,6 +345,10 @@ pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
 		let zero_id = page.insert(Button::new(
 			"<0>",
 			&PROFONT_18_POINT,
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical:   Vertical::Center,
+			},
 			Size::new(50, 50),
 			false,
 		)?)?;
@@ -338,12 +369,20 @@ pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
 	let status_textbox = page.insert(Textbox::new(
 		"DISCONNECTED",
 		&PROFONT_18_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Left,
+			vertical:   Vertical::Center,
+		},
 		Size::new(240, 30),
 		false,
 	)?)?;
 	let mode_textbox = page.insert(Textbox::new(
 		"JOG",
 		&PROFONT_18_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(80, 30),
 		false,
 	)?)?;
@@ -351,12 +390,20 @@ pub fn build_main_page<'a, A: Allocator<'a>, const W: usize, const F: usize>(
 	let btn_run = page.insert(Button::new(
 		"RUN",
 		&PROFONT_18_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(160, 50),
 		false,
 	)?)?;
 	let btn_reset = page.insert(Button::new(
 		"RESET",
 		&PROFONT_18_POINT,
+		TextAlignment {
+			horizontal: Horizontal::Center,
+			vertical:   Vertical::Center,
+		},
 		Size::new(160, 50),
 		false,
 	)?)?;

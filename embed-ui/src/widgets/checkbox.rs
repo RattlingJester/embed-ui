@@ -7,13 +7,12 @@ use embedded_graphics_framebuf::FrameBuf;
 use crate::{Error, input::Interaction, style::Style, widgets::Widget};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Checkbox {
 	size:      Size,
 	focus:     bool,
 	focusable: bool,
 	checked:   bool,
-	held:      bool,
 	changed:   bool,
 }
 
@@ -24,7 +23,6 @@ impl Checkbox {
 			focus: false,
 			focusable,
 			checked: false,
-			held: false,
 			changed: true,
 		}
 	}

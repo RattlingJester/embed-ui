@@ -2,8 +2,9 @@ use core::str::FromStr;
 
 use embedded_graphics::{
 	Drawable,
+	geometry::Point,
 	mono_font::{MonoFont, MonoTextStyle},
-	prelude::{PixelColor, Point, Size},
+	prelude::{PixelColor, Size},
 	primitives::{PrimitiveStyleBuilder, Rectangle, StyledDrawable},
 	text::{Alignment, Baseline, Text, TextStyleBuilder},
 };
@@ -14,29 +15,32 @@ use heapless::String;
 use crate::{
 	Error,
 	style::Style,
-	widgets::{MAX_TEXT_LEN, Widget},
+	widgets::{Horizontal, MAX_TEXT_LEN, TextAlignment, Vertical, Widget},
 };
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Textbox {
-	text:      String<MAX_TEXT_LEN>,
-	font:      &'static MonoFont<'static>,
-	size:      Size,
-	focus:     bool,
-	focusable: bool,
-	changed:   bool,
+	text:       String<MAX_TEXT_LEN>,
+	text_align: TextAlignment,
+	font:       &'static MonoFont<'static>,
+	size:       Size,
+	focus:      bool,
+	focusable:  bool,
+	changed:    bool,
 }
 
 impl Textbox {
 	pub fn new(
 		text: &str,
 		font: &'static MonoFont,
+		text_align: TextAlignment,
 		size: Size,
 		focusable: bool,
 	) -> Result<Self, Error> {
 		Ok(Self {
 			text: String::from_str(text)?,
+			text_align,
 			font,
 			size,
 			focus: false,
@@ -64,17 +68,87 @@ impl<C: PixelColor, const F: usize> Widget<C, F> for Textbox {
 			.fill_color(style.bg_color)
 			.build();
 
-		let padding_x = 4;
+		let br = rect.bottom_right().unwrap_or_default();
+		let tl = rect.top_left;
+		let center = rect.center();
+
+		let padding_x = style.border_width as i32 + 4;
+		let padded_left = tl.x + padding_x;
+		let padded_right = br.x - padding_x;
+
+		let (horizontal_alignment, vertical_baseline, text_pos) = match self.text_align {
+			TextAlignment {
+				horizontal: Horizontal::Left,
+				vertical: Vertical::Top,
+			} => (
+				Alignment::Left,
+				Baseline::Top,
+				Point::new(padded_left, tl.y),
+			),
+			TextAlignment {
+				horizontal: Horizontal::Left,
+				vertical: Vertical::Bottom,
+			} => (
+				Alignment::Left,
+				Baseline::Bottom,
+				Point::new(padded_left, br.y),
+			),
+			TextAlignment {
+				horizontal: Horizontal::Left,
+				vertical: Vertical::Center,
+			} => (
+				Alignment::Left,
+				Baseline::Middle,
+				Point::new(padded_left, center.y),
+			),
+
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical: Vertical::Top,
+			} => (Alignment::Center, Baseline::Top, Point::new(center.x, tl.y)),
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical: Vertical::Bottom,
+			} => (
+				Alignment::Center,
+				Baseline::Bottom,
+				Point::new(center.x, br.y),
+			),
+			TextAlignment {
+				horizontal: Horizontal::Center,
+				vertical: Vertical::Center,
+			} => (Alignment::Center, Baseline::Middle, center),
+
+			TextAlignment {
+				horizontal: Horizontal::Right,
+				vertical: Vertical::Top,
+			} => (
+				Alignment::Right,
+				Baseline::Top,
+				Point::new(padded_right, tl.y),
+			),
+			TextAlignment {
+				horizontal: Horizontal::Right,
+				vertical: Vertical::Bottom,
+			} => (
+				Alignment::Right,
+				Baseline::Bottom,
+				Point::new(padded_right, br.y),
+			),
+			TextAlignment {
+				horizontal: Horizontal::Right,
+				vertical: Vertical::Center,
+			} => (
+				Alignment::Right,
+				Baseline::Middle,
+				Point::new(padded_right, center.y),
+			),
+		};
 
 		let ts = TextStyleBuilder::new()
-			.alignment(Alignment::Left)
-			.baseline(Baseline::Middle)
+			.alignment(horizontal_alignment)
+			.baseline(vertical_baseline)
 			.build();
-
-		let text_pos = Point::new(
-			rect.top_left.x + padding_x,
-			rect.top_left.y + rect.size.height as i32 / 2,
-		);
 
 		rect.draw_styled(&border_style, target)?;
 

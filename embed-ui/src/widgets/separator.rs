@@ -7,7 +7,7 @@ use embedded_graphics_framebuf::FrameBuf;
 use crate::{Error, style::Style, widgets::Widget};
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Separator {
 	size:    Size,
 	changed: bool,

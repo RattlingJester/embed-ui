@@ -15,6 +15,31 @@ pub mod textbox;
 
 pub const MAX_TEXT_LEN: usize = 32;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Default, Clone, Copy)]
+pub enum Horizontal {
+	Left,
+	#[default]
+	Center,
+	Right,
+}
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Default, Clone, Copy)]
+pub enum Vertical {
+	Top,
+	#[default]
+	Center,
+	Bottom,
+}
+
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TextAlignment {
+	pub horizontal: Horizontal,
+	pub vertical:   Vertical,
+}
+
 pub trait Widget<C: PixelColor, const FB_SIZE: usize> {
 	fn draw(
 		&mut self,
