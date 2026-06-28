@@ -42,7 +42,15 @@ static FRAMEBUF: ConstStaticCell<[Rgb666; STRIP_PIXEL_COUNT]> =
 	ConstStaticCell::new([Rgb666::WHITE; STRIP_PIXEL_COUNT]);
 
 fn main() {
-	let (page_main, main_elements) = build_main_page::<_, 30, _>(ARENA.take()).unwrap();
+	let arena = ARENA.take();
+
+	let offset_ptr = &raw const arena.offset;
+
+	let (page_main, main_elements) = build_main_page::<_, 30, _>(arena).unwrap(); // Takes up 1856 bytes
+
+	unsafe {
+		println!("Page size: {}", (*offset_ptr));
+	}
 
 	let mut ui_state = UiState {
 		focused_joint: 0,
