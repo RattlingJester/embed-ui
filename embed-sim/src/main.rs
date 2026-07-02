@@ -257,10 +257,18 @@ fn main() {
 
 		ui.begin_frame(interaction.take());
 
-		for strip in 0..STRIP_COUNT {
-			let rect = ui.draw(strip, &mut buf).unwrap();
+		let mask = ui
+			.painter
+			.dirty_strip_mask(ui.current_page(), STRIP_H, STRIP_COUNT);
 
-			display.fill_contiguous(&rect, buf.data).unwrap();
+		for strip in 0..STRIP_COUNT {
+			if mask & 1 << strip == 0 {
+				continue;
+			}
+
+			let strip_rect = ui.draw(strip, &mut buf).unwrap();
+
+			display.fill_contiguous(&strip_rect, buf.data).unwrap();
 		}
 
 		ui.end_frame();
