@@ -27,6 +27,36 @@ impl<const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize>
 	pub const fn new() -> Self {
 		Self {}
 	}
+
+	/// Returns a bitmask of strips
+	/// Bit N is set if strip N needs repainting.
+	pub fn dirty_strip_mask<
+		'a,
+		A: Allocator<'a>,
+		C: PixelColor,
+		const WIDGET_COUNT: usize,
+		const N: usize,
+	>(
+		&self,
+		page: &Page<'a, C, A, WIDGET_COUNT, N>,
+		strip_h: usize,
+		strip_count: usize,
+	) -> u32 {
+		let mut mask = 0u32;
+		for entry in page.widgets[..page.count].iter().flatten() {
+			let (widget, rect) = entry;
+			if widget.is_changed() {
+				let y0 = rect.top_left.y.max(0) as usize;
+				let y1 = (y0 + rect.size.height as usize).saturating_sub(1);
+				let first = y0 / strip_h;
+				let last = (y1 / strip_h).min(strip_count - 1);
+				for s in first..=last {
+					mask |= 1 << s;
+				}
+			}
+		}
+		mask
+	}
 }
 
 impl<'a, const STRIP_COUNT: usize, const STRIP_W: usize, const STRIP_H: usize> Painter<'a>

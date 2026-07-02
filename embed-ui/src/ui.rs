@@ -1,5 +1,6 @@
 use embedded_graphics::{prelude::PixelColor, primitives::Rectangle};
 use embedded_graphics_framebuf::FrameBuf;
+
 use heapless::spsc::Queue;
 
 use crate::{
@@ -21,12 +22,11 @@ pub struct Ui<
 	C: PixelColor,
 	P: Painter<'a>,
 > {
-	pages:               [Page<'a, C, A, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
-	events:              Queue<Event, WIDGET_COUNT>,
-	pub painter:         P,
-	pub active_page_idx: u8,
-	pub dirty_frame:     bool,
-	pub style:           Style<C>,
+	pages:           [Page<'a, C, A, WIDGET_COUNT, FB_SIZE>; PAGE_COUNT],
+	active_page_idx: u8,
+	events:          Queue<Event, WIDGET_COUNT>,
+	pub painter:     P,
+	pub style:       Style<C>,
 }
 
 impl<
@@ -49,7 +49,6 @@ impl<
 			events: Queue::new(),
 			painter,
 			active_page_idx: 0,
-			dirty_frame: true,
 			style,
 		}
 	}
@@ -60,7 +59,6 @@ impl<
 
 	pub fn switch_to_page(&mut self, idx: u8) -> bool {
 		if idx < PAGE_COUNT as u8 {
-			self.dirty_frame = true;
 			self.active_page_idx = idx;
 			true
 		} else {
@@ -71,7 +69,6 @@ impl<
 	/// Switches to the next page, wrapping back to the first page if at the end.
 	pub fn next_page(&mut self) {
 		self.active_page_idx = (self.active_page_idx + 1) % PAGE_COUNT as u8;
-		self.dirty_frame = true;
 	}
 
 	/// Switches to the previous page, wrapping to the last page if at the beginning.
@@ -81,7 +78,6 @@ impl<
 		} else {
 			self.active_page_idx - 1
 		};
-		self.dirty_frame = true;
 	}
 
 	/// Retrieves the currently active page immutably
@@ -94,106 +90,6 @@ impl<
 		&mut self.pages[self.active_page_idx as usize]
 	}
 
-	// pub fn get_button(&self, page_idx: u8, id: WidgetId) -> Option<(&Button, &Rectangle)> {
-	// 	if let (WidgetKind::Button(b), rect) = self.get_page(page_idx).get(id)? {
-	// 		Some((b, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_button_mut(
-	// 	&mut self,
-	// 	page_idx: u8,
-	// 	id: WidgetId,
-	// ) -> Option<(&mut Button, &mut Rectangle)> {
-	// 	if let (WidgetKind::Button(b), rect) = self.get_page_mut(page_idx).get_mut(id)? {
-	// 		Some((b, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_label(&self, page_idx: u8, id: WidgetId) -> Option<(&Label, &Rectangle)> {
-	// 	if let (WidgetKind::Label(l), rect) = self.get_page(page_idx).get(id)? {
-	// 		Some((l, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_label_mut(
-	// 	&mut self,
-	// 	page_idx: u8,
-	// 	id: WidgetId,
-	// ) -> Option<(&mut Label, &mut Rectangle)> {
-	// 	if let (WidgetKind::Label(l), rect) = self.get_page_mut(page_idx).get_mut(id)? {
-	// 		Some((l, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_checkbox(&self, page_idx: u8, id: WidgetId) -> Option<(&Checkbox, &Rectangle)> {
-	// 	if let (WidgetKind::Checkbox(c), rect) = self.get_page(page_idx).get(id)? {
-	// 		Some((c, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_checkbox_mut(
-	// 	&mut self,
-	// 	page_idx: u8,
-	// 	id: WidgetId,
-	// ) -> Option<(&mut Checkbox, &mut Rectangle)> {
-	// 	if let (WidgetKind::Checkbox(c), rect) = self.get_page_mut(page_idx).get_mut(id)? {
-	// 		Some((c, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_separator(&self, page_idx: u8, id: WidgetId) -> Option<(&Separator, &Rectangle)> {
-	// 	if let (WidgetKind::Separator(s), rect) = self.get_page(page_idx).get(id)? {
-	// 		Some((s, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_separator_mut(
-	// 	&mut self,
-	// 	page_idx: u8,
-	// 	id: WidgetId,
-	// ) -> Option<(&mut Separator, &mut Rectangle)> {
-	// 	if let (WidgetKind::Separator(s), rect) = self.get_page_mut(page_idx).get_mut(id)? {
-	// 		Some((s, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_textbox(&self, page_idx: u8, id: WidgetId) -> Option<(&Textbox, &Rectangle)> {
-	// 	if let (WidgetKind::Textbox(t), rect) = self.get_page(page_idx).get(id)? {
-	// 		Some((t, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
-	// pub fn get_textbox_mut(
-	// 	&mut self,
-	// 	page_idx: u8,
-	// 	id: WidgetId,
-	// ) -> Option<(&mut Textbox, &mut Rectangle)> {
-	// 	if let (WidgetKind::Textbox(t), rect) = self.get_page_mut(page_idx).get_mut(id)? {
-	// 		Some((t, rect))
-	// 	} else {
-	// 		None
-	// 	}
-	// }
-
 	pub fn get_page(&self, idx: u8) -> &Page<'a, C, A, WIDGET_COUNT, FB_SIZE> {
 		&self.pages[idx as usize]
 	}
@@ -202,6 +98,7 @@ impl<
 		&mut self.pages[idx as usize]
 	}
 
+	/// Processes user interactions. Need to call this function before drawing each frame
 	pub fn begin_frame(&mut self, interaction: Option<Interaction>) {
 		let page = &mut self.pages[self.active_page_idx as usize];
 
@@ -220,9 +117,8 @@ impl<
 		Ok(rect)
 	}
 
+	/// Flags all widget as clean (rendered) so you won't have to re-render them on the next frame if they don't change. Have to call this function after drawing each frame
 	pub fn end_frame(&mut self) {
-		self.dirty_frame = false;
-
 		let page = &mut self.pages[self.active_page_idx as usize];
 
 		for (w, _rect) in page.iter_mut() {
